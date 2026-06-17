@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lab Virtual Listrik Statis – Inkuiri IPA Kelas 9</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 50%, #EDE9FE 100%);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  .sim-canvas { cursor: grab; touch-action: none; display: block; width: 100%; }
+  .sim-canvas:active { cursor: grabbing; }
+  .card {
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.9);
+    border-radius: 1rem;
+    box-shadow: 0 4px 24px rgba(59,130,246,0.10);
+  }
+  .tab-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 0.75rem;
+    font-weight: 700;
+    font-size: 0.82rem;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.18s;
+    background: rgba(255,255,255,0.5);
+    color: #64748B;
+    white-space: nowrap;
+  }
+  .tab-btn.active {
+    background: linear-gradient(135deg, #6366F1, #8B5CF6);
+    color: white;
+    border-color: #6366F1;
+    box-shadow: 0 3px 12px rgba(99,102,241,0.35);
+  }
+  .tab-btn:hover:not(.active) { background: rgba(255,255,255,0.85); color: #4338CA; }
+  .sim-panel { display: none; }
+  .sim-panel.active { display: block; }
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    padding: 0.3rem 0.8rem; border-radius: 9999px;
+    font-weight: 700; font-size: 0.78rem;
+  }
+  .badge-neutral { background: #E2E8F0; color: #475569; }
+  .badge-pos     { background: #FEE2E2; color: #DC2626; }
+  .badge-neg     { background: #DBEAFE; color: #2563EB; }
+  .badge-green   { background: #DCFCE7; color: #16A34A; }
+  .btn-act {
+    background: linear-gradient(135deg, #6366F1, #4F46E5);
+    color: white; font-weight: 700;
+    padding: 0.55rem 1.3rem; border-radius: 0.75rem;
+    border: none; cursor: pointer;
+    font-size: 0.9rem; font-family: 'Nunito', sans-serif;
+    box-shadow: 0 4px 12px rgba(99,102,241,0.35);
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .btn-act:hover  { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(99,102,241,0.45); }
+  .btn-act:active { transform: translateY(0); }
+  .btn-red   { background: linear-gradient(135deg, #EF4444, #DC2626); box-shadow: 0 4px 12px rgba(239,68,68,0.35); }
+  .btn-amber { background: linear-gradient(135deg, #F59E0B, #D97706); box-shadow: 0 4px 12px rgba(245,158,11,0.35); }
+  .btn-green { background: linear-gradient(135deg, #22C55E, #16A34A); box-shadow: 0 4px 12px rgba(34,197,94,0.35); }
+  .toggle-wrap { display: flex; align-items: center; gap: 0.6rem; cursor: pointer; user-select: none; }
+  .toggle-wrap input { display: none; }
+  .toggle-track { width: 44px; height: 24px; background: #CBD5E1; border-radius: 9999px; position: relative; transition: background 0.25s; }
+  .toggle-track::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; background: white; border-radius: 50%; transition: left 0.25s; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+  input:checked + .toggle-track { background: #6366F1; }
+  input:checked + .toggle-track::after { left: 23px; }
+  .info-box { background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.08)); border-left: 4px solid #6366F1; border-radius: 0 0.75rem 0.75rem 0; }
+  .slider-wrap input[type=range] { -webkit-appearance: none; height: 6px; border-radius: 3px; background: #C7D2FE; outline: none; cursor: pointer; width: 100%; }
+  .slider-wrap input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; background: #6366F1; border-radius: 50%; box-shadow: 0 2px 6px rgba(99,102,241,0.4); }
+
+  /* ── Inkuiri Panel Styles ── */
+  .inkuiri-panel {
+    background: linear-gradient(135deg, #FEFCE8, #FEF3C7);
+    border: 2px solid #FCD34D;
+    border-radius: 1rem;
+    overflow: hidden;
+    margin-top: 0.75rem;
+  }
+  .inkuiri-header {
+    background: linear-gradient(135deg, #F59E0B, #D97706);
+    color: white;
+    padding: 0.65rem 1rem;
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+  }
+  .inkuiri-header h3 { font-weight: 800; font-size: 0.92rem; }
+  .inkuiri-body { padding: 1rem; display: none; }
+  .inkuiri-body.open { display: block; }
+  .inkuiri-section {
+    margin-bottom: 1rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    background: rgba(255,255,255,0.7);
+  }
+  .inkuiri-section h4 {
+    font-weight: 800; font-size: 0.82rem;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    margin-bottom: 0.45rem;
+  }
+  .phase-pemantik h4   { color: #7C3AED; }
+  .phase-hipotesis h4  { color: #2563EB; }
+  .phase-eksplorasi h4 { color: #059669; }
+  .phase-data h4       { color: #D97706; }
+  .phase-analisis h4   { color: #DC2626; }
+  .phase-simpulan h4   { color: #374151; }
+
+  .pertanyaan-item {
+    display: flex; gap: 0.5rem; align-items: flex-start;
+    font-size: 0.82rem; color: #374151; margin-bottom: 0.35rem;
+    font-weight: 600; line-height: 1.45;
+  }
+  .pertanyaan-item .nomor {
+    background: #6366F1; color: white;
+    border-radius: 50%; width: 20px; height: 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; font-weight: 800; flex-shrink: 0; margin-top: 1px;
+  }
+  .jawaban-input {
+    width: 100%; margin-top: 0.3rem;
+    padding: 0.45rem 0.7rem;
+    border: 2px solid #E0E7FF;
+    border-radius: 0.5rem;
+    font-size: 0.82rem; font-family: 'Nunito', sans-serif;
+    background: white; color: #374151;
+    resize: vertical; min-height: 52px;
+    transition: border-color 0.18s;
+  }
+  .jawaban-input:focus { outline: none; border-color: #6366F1; }
+  .tabel-data {
+    width: 100%; border-collapse: collapse; font-size: 0.78rem; margin-top: 0.5rem;
+  }
+  .tabel-data th {
+    background: #EDE9FE; color: #4C1D95; padding: 0.4rem 0.6rem;
+    font-weight: 800; text-align: center; border: 1px solid #DDD6FE;
+  }
+  .tabel-data td {
+    padding: 0.35rem 0.5rem; border: 1px solid #E5E7EB;
+    text-align: center; background: white;
+  }
+  .tabel-data td input {
+    width: 100%; border: none; outline: none; text-align: center;
+    font-size: 0.78rem; font-family: 'Nunito', sans-serif; background: transparent;
+    font-weight: 700; color: #374151;
+  }
+  .btn-cek {
+    background: linear-gradient(135deg, #8B5CF6, #6D28D9);
+    color: white; font-weight: 700; padding: 0.45rem 1.1rem;
+    border-radius: 0.65rem; border: none; cursor: pointer;
+    font-size: 0.82rem; font-family: 'Nunito', sans-serif;
+    margin-top: 0.6rem;
+    transition: transform 0.1s;
+  }
+  .btn-cek:hover { transform: translateY(-1px); }
+  .feedback-box {
+    margin-top: 0.6rem; padding: 0.6rem 0.9rem;
+    border-radius: 0.65rem; font-size: 0.8rem; font-weight: 700;
+    display: none;
+  }
+  .feedback-benar { background: #DCFCE7; color: #166534; border: 1px solid #86EFAC; }
+  .feedback-salah { background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5; }
+  .feedback-info  { background: #EEF2FF; color: #3730A3; border: 1px solid #C7D2FE; }
+  .langkah-item {
+    display: flex; gap: 0.5rem; align-items: flex-start;
+    font-size: 0.8rem; color: #374151; font-weight: 600;
+    margin-bottom: 0.4rem; line-height: 1.4;
+  }
+  .langkah-icon {
+    width: 22px; height: 22px; border-radius: 0.35rem;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem; flex-shrink: 0;
+    background: #E0E7FF; color: #4338CA; font-weight: 800;
+  }
+  .badge-fase {
+    display: inline-block; padding: 0.15rem 0.55rem;
+    border-radius: 9999px; font-size: 0.7rem; font-weight: 800;
+    margin-bottom: 0.4rem;
+  }
+  .fase-1 { background: #EDE9FE; color: #6D28D9; }
+  .fase-2 { background: #DBEAFE; color: #1E40AF; }
+  .fase-3 { background: #DCFCE7; color: #166534; }
+  .fase-4 { background: #FEF3C7; color: #92400E; }
+  .fase-5 { background: #FEE2E2; color: #991B1B; }
+  .progres-bar-wrap { background: #E0E7FF; border-radius: 9999px; height: 8px; margin-top: 0.4rem; }
+  .progres-bar-fill { background: linear-gradient(90deg,#6366F1,#8B5CF6); border-radius: 9999px; height: 8px; transition: width 0.4s; }
+  .chevron { font-size: 1rem; transition: transform 0.25s; }
+  .chevron.open { transform: rotate(180deg); }
+  .highlight-tip {
+    background: linear-gradient(135deg, #EFF6FF, #EDE9FE);
+    border-left: 3px solid #6366F1;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0 0.5rem 0.5rem 0;
+    font-size: 0.78rem; color: #3730A3; font-weight: 600;
+    margin-top: 0.4rem;
+  }
+</style>
+</head>
+<body>
+<div class="max-w-4xl mx-auto px-3 py-5">
+
+  <!-- Header -->
+  <div class="text-center mb-4">
+    <p class="text-xs font-700 uppercase tracking-widest text-indigo-400 mb-1">IPA Kelas 9 – Listrik Statis · SMPN 3 Besuki</p>
+    <h1 class="text-2xl sm:text-3xl font-800 text-gray-800 leading-tight">⚡ Lab Virtual Listrik Statis</h1>
+    <p class="text-sm text-gray-500 mt-1">Eksplorasi, amati, analisis — temukan sendiri hukumnya!</p>
+  </div>
+
+  <!-- Tab Navigation -->
+  <div class="card p-2 mb-3 flex gap-2 overflow-x-auto">
+    <button class="tab-btn active" onclick="switchTab('sim1')">🎈 Balon &amp; Wol</button>
+    <button class="tab-btn" onclick="switchTab('sim2')">⚖️ Elektroskop</button>
+    <button class="tab-btn" onclick="switchTab('sim3')">🌩️ Petir &amp; Penangkal</button>
+    <button class="tab-btn" onclick="switchTab('sim4')">🔬 Hukum Coulomb</button>
+  </div>
+
+  <!-- ════════════════ SIM 1: Balon & Wol ════════════════ -->
+  <div id="sim1" class="sim-panel active">
+    <div class="card p-2 sm:p-3 mb-3">
+      <canvas id="canvas1" class="sim-canvas" width="800" height="400"></canvas>
+    </div>
+    <div class="card p-3 mb-3 flex flex-wrap gap-3 items-center justify-between">
+      <div class="flex flex-wrap gap-2 items-center">
+        <span class="text-xs font-700 text-gray-500 uppercase">Status:</span>
+        <span id="b1-wool" class="status-badge badge-neutral">🧶 Kain Wol: Netral</span>
+        <span id="b1-bal"  class="status-badge badge-neutral">🎈 Balon: Netral</span>
+        <span id="b1-wall" class="status-badge badge-neutral">🧱 Dinding: Netral</span>
+      </div>
+      <div id="b1-info" class="info-box px-3 py-2 text-xs font-600 text-indigo-700 hidden max-w-xs">
+        <span id="b1-infotxt"></span>
+      </div>
+    </div>
+    <div class="card p-3 mb-3 flex flex-wrap gap-3 items-center">
+      <button class="btn-act" onclick="sim1Reset()">↺ Reset</button>
+      <label class="toggle-wrap">
+        <input type="checkbox" id="s1-charges" checked onchange="s1ShowCharges=this.checked">
+        <span class="toggle-track"></span>
+        <span class="text-sm font-600 text-gray-700">Tampilkan Muatan</span>
+      </label>
+    </div>
+    <div class="card p-3 text-xs text-gray-600 grid grid-cols-1 sm:grid-cols-3 gap-2">
+      <div class="flex gap-2 items-start"><span class="text-lg">1️⃣</span><span><strong class="text-indigo-700">Gosok ke Kain Wol:</strong> Tarik balon ke kiri hingga menyentuh kain wol, geser bolak-balik untuk memindahkan elektron.</span></div>
+      <div class="flex gap-2 items-start"><span class="text-lg">2️⃣</span><span><strong class="text-indigo-700">Lepas Dekat Wol:</strong> Setelah bermuatan, lepaskan balon di dekat wol — balon akan tertarik!</span></div>
+      <div class="flex gap-2 items-start"><span class="text-lg">3️⃣</span><span><strong class="text-indigo-700">Dekatkan ke Dinding:</strong> Tarik ke kanan untuk melihat fenomena polarisasi muatan.</span></div>
+    </div>
+
+    <!-- INKUIRI SIM 1 -->
+    <div class="inkuiri-panel">
+      <div class="inkuiri-header" onclick="toggleInkuiri('iq1')">
+        <h3>🔍 Aktivitas Inkuiri — Gosok &amp; Muatan</h3>
+        <span class="chevron" id="chev-iq1">▼</span>
+      </div>
+      <div class="inkuiri-body" id="iq1">
+
+        <!-- Fase 1: Pemantik -->
+        <div class="inkuiri-section phase-pemantik">
+          <span class="badge-fase fase-1">🟣 FASE 1 — Pertanyaan Pemantik</span>
+          <h4>Apa yang Kamu Pikirkan?</h4>
+          <div class="pertanyaan-item">
+            <span class="nomor">1</span>
+            <span>Pernahkah kamu merasakan rambutmu berdiri setelah menggosok balon ke kepala? Mengapa hal itu bisa terjadi?</span>
+          </div>
+          <textarea class="jawaban-input" placeholder="Tulis dugaan awalmu di sini..."></textarea>
+          <div class="pertanyaan-item" style="margin-top:0.5rem">
+            <span class="nomor">2</span>
+            <span>Menurutmu, apa yang berpindah saat balon digosokkan ke kain wol — atom, proton, atau elektron? Jelaskan alasanmu!</span>
+          </div>
+          <textarea class="jawaban-input" placeholder="Tulis dugaan awalmu di sini..."></textarea>
+        </div>
+
+        <!-- Fase 2: Hipotesis -->
+        <div class="inkuiri-section phase-hipotesis">
+          <span class="badge-fase fase-2">🔵 FASE 2 — Buat Hipotesis</span>
+          <h4>Prediksi Sebelum Mencoba</h4>
+          <p style="font-size:0.8rem;color:#374151;margin-bottom:0.5rem;font-weight:600;">Lingkari/pilih prediksimu, kemudian buktikan dengan simulasi!</p>
+          <div class="pertanyaan-item">
+            <span class="nomor">A</span>
+            <span>Setelah balon digosok ke kain wol, muatan balon akan menjadi:</span>
+          </div>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin:0.3rem 0 0.5rem 1.5rem">
+            <label style="font-size:0.8rem;font-weight:700;cursor:pointer"><input type="radio" name="hip1a" value="pos"> ⊕ Positif</label>
+            <label style="font-size:0.8rem;font-weight:700;cursor:pointer"><input type="radio" name="hip1a" value="neg"> ⊖ Negatif</label>
+            <label style="font-size:0.8rem;font-weight:700;cursor:pointer"><input type="radio" name="hip1a" value="net"> ⚪ Tetap Netral</label>
+          </div>
+          <div class="pertanyaan-item">
+            <span class="nomor">B</span>
+            <span>Balon bermuatan negatif didekatkan ke dinding netral. Apa yang akan terjadi?</span>
+          </div>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin:0.3rem 0 0.5rem 1.5rem">
+            <label style="font-size:0.8rem;font-weight:700;cursor:pointer"><input type="radio" name="hip1b" value="tarik"> 🤝 Balon tertarik ke dinding</label>
+            <label style="font-size:0.8rem;font-weight:700;cursor:pointer"><input type="radio" name="hip1b" value="tolak"> 💢 Balon terdorong menjauh</label>
+            <label style="font-size:0.8rem;font-weight:700;cursor:pointer"><input type="radio" name="hip1b" value="diam"> ➡️ Balon diam saja</label>
+          </div>
+          <button class="btn-cek" onclick="cekHipotesis1()">✅ Cek Hipotesisku</button>
+          <div id="fb-hip1" class="feedback-box"></div>
+        </div>
+
+        <!-- Fase 3: Eksplorasi -->
+        <div class="inkuiri-section phase-eksplorasi">
+          <span class="badge-fase fase-3">🟢 FASE 3 — Eksplorasi Simulasi</span>
+          <h4>Lakukan &amp; Amati Langkah Berikut</h4>
+          <div class="langkah-item"><span class="langkah-icon">→</span><span>Seret balon ke kain wol (kiri) dan gosok bolak-balik beberapa kali. Amati simbol − yang muncul.</span></div>
+          <div class="langkah-item"><span class="langkah-icon">→</span><span>Lepaskan balon di dekat wol. Amati gerakan balon — apakah tertarik atau tidak bergerak?</span></div>
+          <div class="langkah-item"><span class="langkah-icon">→</span><span>Seret balon ke kanan mendekati dinding. Amati simbol muatan di dinding dan gerakan balon.</span></div>
+          <div class="langkah-item"><span class="langkah-icon">→</span><span>Matikan "Tampilkan Muatan" — apakah gejaya masih bisa diamati tanpa melihat simbol?</span></div>
+          <div class="highlight-tip">💡 <strong>Tips Inkuiri:</strong> Baca status badge di atas — gunakan warna lencana untuk membantumu mencatat perubahan muatan!</div>
+        </div>
+
+        <!-- Fase 4: Data -->
+        <div class="inkuiri-section phase-data">
+          <span class="badge-fase fase-4">🟡 FASE 4 — Catat Pengamatan</span>
+          <h4>Tabel Hasil Eksplorasi</h4>
+          <table class="tabel-data">
+            <thead>
+              <tr>
+                <th>Kondisi</th>
+                <th>Muatan Balon</th>
+                <th>Muatan Wol</th>
+                <th>Gejala yang Terjadi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Sebelum digosok</td><td><input placeholder="..."></td><td><input placeholder="..."></td><td><input placeholder="..."></td></tr>
+              <tr><td>Sesudah digosok</td><td><input placeholder="..."></td><td><input placeholder="..."></td><td><input placeholder="..."></td></tr>
+              <tr><td>Balon dekat wol</td><td><input placeholder="..."></td><td><input placeholder="..."></td><td><input placeholder="..."></td></tr>
+              <tr><td>Balon dekat dinding</td><td><input placeholder="..."></td><td><input placeholder="..."></td><td><input placeholder="..."></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Fase 5: Analisis -->
+        <div class="inkuiri-section phase-analisis">
+          <span class="badge-fase fase-5">🔴 FASE 5 — Analisis &amp; Refleksi</span>
+          <h4>Berpikir Lebih Dalam</h4>
+          <div class="pertanyaan-item">
+            <span class="nomor">1</span>
+            <span>Mengapa saat balon bermuatan negatif didekatkan ke dinding netral, dinding seolah "tertarik"? Apa yang terjadi pada muatan di dalam dinding?</span>
+          </div>
+          <textarea class="jawaban-input" placeholder="Jelaskan dengan kalimatmu sendiri..."></textarea>
+          <div class="pertanyaan-item" style="margin-top:0.5rem">
+            <span class="nomor">2</span>
+            <span>Proses apa yang terjadi pada balon dan wol (konduksi, induksi, atau gesekan/gosokan)? Jelaskan perbedaannya!</span>
+          </div>
+          <textarea class="jawaban-input" placeholder="Tulis jawabanmu..."></textarea>
+          <div class="pertanyaan-item" style="margin-top:0.5rem">
+            <span class="nomor">3</span>
+            <span><strong>Tantangan:</strong> Jika kamu menggosok balon dua kali lebih lama, apakah gaya tarik ke wol dan dinding akan lebih kuat? Kenapa?</span>
+          </div>
+          <textarea class="jawaban-input" placeholder="Tulis prediksi dan penjelasanmu..."></textarea>
+        </div>
+
+        <!-- Simpulan -->
+        <div class="inkuiri-section phase-simpulan">
+          <span class="badge-fase" style="background:#F0FDF4;color:#166534;">✅ SIMPULAN</span>
+          <h4>Kesimpulanku</h4>
+          <p style="font-size:0.8rem;color:#374151;font-weight:600;margin-bottom:0.45rem;">Lengkapi kalimat simpulan berikut berdasarkan pengamatanmu:</p>
+          <p style="font-size:0.8rem;color:#374151;font-weight:600">Ketika balon digosok ke kain wol, <input style="border:none;border-bottom:2px solid #6366F1;outline:none;width:120px;font-family:Nunito,sans-serif;font-weight:700;font-size:0.8rem;color:#4338CA"> berpindah dari <input style="border:none;border-bottom:2px solid #6366F1;outline:none;width:80px;font-family:Nunito,sans-serif;font-weight:700;font-size:0.8rem;color:#4338CA"> ke <input style="border:none;border-bottom:2px solid #6366F1;outline:none;width:80px;font-family:Nunito,sans-serif;font-weight:700;font-size:0.8rem;color:#4338CA">, sehingga balon menjadi bermuatan <input style="border:none;border-bottom:2px solid #6366F1;outline:none;width:80px;font-family:Nunito,sans-serif;font-weight:700;font-size:0.8rem;color:#4338CA"> dan fenomena ini disebut <input style="border:none;border-bottom:2px solid #6366F1;outline:none;width:100px;font-family:Nunito,sans-serif;font-weight:700;font-size:0.8rem;color:#4338CA">.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ SIM 2: Elektroskop ════════════════ -->
+  <div id="sim2" class="sim-panel">
+    <div class="card p-2 sm:p-3 mb-3">
+      <canvas id="canvas2" class="sim-canvas" width="800" height="440"></canvas>
+    </div>
+    <div class="card p-3 mb-3 flex flex-wrap gap-3 items-center justify-between">
+      <div class="flex flex-wrap gap-2 items-center">
+        <span class="text-xs font-700 text-gray-500 uppercase">Status:</span>
+        <span id="b2-scope" class="status-badge badge-neutral">⚖️ Elektroskop: Netral</span>
+        <span id="b2-rod"   class="status-badge badge-neutral">🔵 Batang: Tidak Ada</span>
+      </div>
+      <div id="b2-info" class="info-box px-3 py-2 text-xs font-600 text-indigo-700 hidden max-w-xs">
+        <span id="b2-infotxt"></span>
+      </div>
+    </div>
+    <div class="card p-3 mb-3 flex flex-wrap gap-3 items-center">
+      <button class="btn-act" onclick="sim2Reset()">↺ Reset</button>
+      <button class="btn-act btn-red"   onclick="s2ChargeRod('neg')">⊖ Batang Negatif</button>
+      <button class="btn-act btn-amber" onclick="s2ChargeRod('pos')">⊕ Batang Positif</button>
+      <button class="btn-act btn-green" onclick="s2Touch()">👆 Sentuh Knop</button>
+    </div>
+    <div class="card p-3 text-xs text-gray-600 grid grid-cols-1 sm:grid-cols-3 gap-2">
+      <div class="flex gap-2 items-start"><span class="text-lg">1️⃣</span><span><strong class="text-indigo-700">Pilih Batang:</strong> Klik "Batang Negatif" atau "Batang Positif", lalu seret batang mendekati knop elektroskop.</span></div>
+      <div class="flex gap-2 items-start"><span class="text-lg">2️⃣</span><span><strong class="text-indigo-700">Amati Daun:</strong> Saat batang dekat, daun membuka karena induksi listrik (pemisahan muatan).</span></div>
+      <div class="flex gap-2 items-start"><span class="text-lg">3️⃣</span><span><strong class="text-indigo-700">Sentuh Knop:</strong> Klik "Sentuh Knop" saat batang dekat untuk mengisi elektroskop secara permanen (konduksi).</span></div>
+    </div>
+
+    <!-- INKUIRI SIM 2 -->
+    <div class="inkuiri-panel">
+      <div class="inkuiri-header" onclick="toggleInkuiri('iq2')">
+        <h3>🔍 Aktivitas Inkuiri — Induksi &amp; Konduksi Listrik</h3>
+        <span class="chevron" id="chev-iq2">▼</span>
+      </div>
+      <div class="inkuiri-body" id="iq2">
+
+        <div class="inkuiri-section phase-pemantik">
+          <span class="badge-fase fase-1">🟣 FASE 1 — Pertanyaan Pemantik</span>
+          <h4>Apa yang Kamu Pikirkan?</h4>
+          <div class="pertanyaan-item">
+            <span class="nomor">1</span>
+            <span>Elektroskop digunakan untuk mendeteksi muatan listrik. Bagaimana bisa sebuah alat mendeteksi sesuatu yang tidak terlihat?</span>
+          </div>
+          <textarea class="jawaban-input" placeholder="Tulis ide awalmu..."></textarea>
+          <div class="pertanyaan-item" style="margin-top:0.5rem">
+            <span class="nomor">2</span>
+            <span>Menurutmu, apakah batang bermuatan harus menyentuh elektroskop agar daunnya membuka? Jelaskan alasanmu!</span>
+          </div>
+          <textarea class="jawaban-input" placeholder="Tulis dugaan awalmu..."></textarea>
+        </div>
+
+        <div class="inkuiri-section phase-hipotesis">
+          <span class="badge-fase fase-2">🔵 FASE 2 — Buat Hipotesis</span>
+          <h4>Prediksi Dua Eksperimen</h4>
+          <div class="pertanyaan-item">
+            <span class="nomor">A</span>
+            <span>Batang NEGATIF didekatkan (tidak menyentuh) ke knop elektroskop netral. Daun akan:</span>
+          </div>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin:0.3rem 0 0.5rem 1.5rem">
+            <label style="font-size:0.8rem;font-weight:700;cursor:pointer"><input type="radio" name="hip2a" value="buka"> 📖 Membuka</label>
+            <label style="font-size:0.8rem;font-weight:700;cursor:pointer"><input type="radio" name="hip2a" value="tutup"> 📕 Tetap menutup</label>
+          </div>
+          <div class="pertanyaan-item">
+            <span class="nomor">B</span>
+            <span>Setelah batang negatif dijauhkan kembali (tanpa menyentuh), daun akan:</span>
+          </div>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin:0.3rem 0 0.5rem 1.5rem">
+            <label style="font-size:0.8rem;font-weight:700;cursor:pointer"><input type="radio" name="hip2b" value="tetap"> 📖 Tetap terbuka</label>
+            <label style="font-size:0.8rem;font-weight:700;cursor:pointer"><input type="radio" name="hip2b" value="tutup"> 📕 Kembali menutup</label>
+          </div>
+          <div class="pertanyaan-item">
+            <span class="nomor">C</span>
+            <span>Jika batang negatif <strong>menyentuh</strong> knop, elektroskop akan bermuatan:</span>
+          </div>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin:0.3rem 0 0.5rem 1.5rem">
+            <label style="font-size:0.8rem;font-weight:700;cursor:pointer"><input type="radio" name="hip2c" value="pos"> ⊕ Positif</label>
+            <label style="font-size:0.8rem;font-weight:700;cursor:pointer"><input type="radio" name="hip2c" value="neg"> ⊖ Negatif</label>
+            <label style="font-size:0.8rem;font-weight:700;cursor:pointer"><input type="radio" name="hip2c" value="net"> ⚪ Netral</label>
+          </div>
+          <button class="btn-cek" onclick="cekHipotesis2()">✅ Cek Hipotesisku</button>
+          <div id="fb-hip2" class="feedback-box"></div>
+        </div>
+
+        <div class="inkuiri-section phase-eksplorasi">
+          <span class="badge-fase fase-3">🟢 FASE 3 — Eksplorasi</span>
+          <h4>Protokol Percobaan — 3 Skenario</h4>
+          <div style="display:grid;gap:0.5rem">
+            <div style="background:#EFF6FF;border-radius:0.5rem;padding:0.5rem 0.75rem">
+              <p style="font-size:0.8rem;font-weight:800;color:#1E40AF;margin-bottom:0.3rem">🔵 Skenario A: Induksi saja</p>
+              <div class="langkah-item"><span class="langkah-icon">1</span><span>Klik "Batang Negatif" → seret mendekati knop → amati sudut daun.</span></div>
+              <div class="langkah-item"><span class="langkah-icon">2</span><span>Jauhkan batang → amati apa yang terjadi pada daun.</span></div>
+            </div>
+            <div style="background:#F0FDF4;border-radius:0.5rem;padding:0.5rem 0.75rem">
+              <p style="font-size:0.8rem;font-weight:800;color:#166534;margin-bottom:0.3rem">🟢 Skenario B: Konduksi negatif</p>
+              <div class="langkah-item"><span class="langkah-icon">1</span><span>Klik "Batang Negatif" → seret dekat knop → klik "Sentuh Knop".</span></div>
+              <div class="langkah-item"><span class="langkah-icon">2</span><span>Jauhkan batang → amati apakah daun tetap terbuka.</span></div>
+            </div>
+            <div style="background:#FEF3C7;border-radius:0.5rem;padding:0.5rem 0.75rem">
+              <p style="font-size:0.8rem;font-weight:800;color:#92400E;margin-bottom:0.3rem">🟡 Skenario C: Konduksi positif</p>
+              <div class="langkah-item"><span class="langkah-icon">1</span><span>Reset → Klik "Batang Positif" → seret dekat knop → klik "Sentuh Knop".</span></div>
+              <div class="langkah-item"><span class="langkah-icon">2</span><span>Amati warna daun dan status badge — apa bedanya dengan Skenario B?</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="inkuiri-section phase-data">
+          <span class="badge-fase fase-4">🟡 FASE 4 — Tabel Pengamatan</span>
+          <h4>Catat Hasil Ketiga Skenario</h4>
+          <table class="tabel-data">
+            <thead>
+              <tr><th>Skenario</th><th>Sudut Daun Saat Dekat</th><th>Sudut Setelah Dijauhkan</th><th>Muatan Akhir Elektroskop</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>A: Induksi negatif</td><td><input placeholder="°"></td><td><input placeholder="°"></td><td><input placeholder="..."></td></tr>
+              <tr><td>B: Konduksi negatif</td><td><input placeholder="°"></td><td><input placeholder="°"></td><td><input placeholder="..."></td></tr>
+              <tr><td>C: Konduksi positif</td><td><input placeholder="°"></td><td><input placeholder="°"></td><td><input placeholder="..."></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="inkuiri-section phase-analisis">
+          <span class="badge-fase fase-5">🔴 FASE 5 — Analisis</span>
+          <h4>Pertanyaan Analisis</h4>
+          <div class="pertanyaan-item">
+            <span class="nomor">1</span>
+            <span>Apa perbedaan antara <strong>induksi</strong> dan <strong>konduksi</strong> listrik berdasarkan pengamatanmu?</span>
+          </div>
+          <textarea class="jawaban-input" placeholder="Jelaskan dengan bahasamu sendiri..."></textarea>
+          <div class="pertanyaan-item" style="margin-top:0.5rem">
+            <span class="nomor">2</span>
+            <span>Pada konduksi dengan batang NEGATIF, mengapa elektroskop justru menjadi POSITIF?</span>
+          </div>
+          <textarea class="jawaban-input" placeholder="Jelaskan aliran elektron yang terjadi..."></textarea>
+          <div class="pertanyaan-item" style="margin-top:0.5rem">
+            <span class="nomor">3</span>
+            <span><strong>Tantangan kritis:</strong> Dapatkah elektroskop digunakan untuk membedakan muatan positif dan negatif setelah terisi? Bagaimana caranya?</span>
+          </div>
+          <textarea class="jawaban-input" placeholder="Rancang caranya..."></textarea>
+        </div>
+
+        <div class="inkuiri-section phase-simpulan">
+          <span class="badge-fase" style="background:#F0FDF4;color:#166534;">✅ SIMPULAN</span>
+          <h4>Aku Menyimpulkan...</h4>
+          <div style="display:grid;gap:0.4rem">
+            <div style="font-size:0.8rem;font-weight:600;color:#374151">Induksi terjadi ketika: <input style="border:none;border-bottom:2px solid #F59E0B;outline:none;width:200px;font-family:Nunito,sans-serif;font-weight:700;font-size:0.8rem;color:#92400E"></div>
+            <div style="font-size:0.8rem;font-weight:600;color:#374151">Konduksi terjadi ketika: <input style="border:none;border-bottom:2px solid #F59E0B;outline:none;width:200px;font-family:Nunito,sans-serif;font-weight:700;font-size:0.8rem;color:#92400E"></div>
+            <div style="font-size:0.8rem;font-weight:600;color:#374151">Perbedaan utamanya adalah: <input style="border:none;border-bottom:2px solid #F59E0B;outline:none;width:200px;font-family:Nunito,sans-serif;font-weight:700;font-size:0.8rem;color:#92400E"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ SIM 3: Petir ════════════════ -->
+  <div id="sim3" class="sim-panel">
+    <div class="card p-2 sm:p-3 mb-3">
+      <canvas id="canvas3" class="sim-canvas" width="800" height="440"></canvas>
+    </div>
+    <div class="card p-3 mb-3 flex flex-wrap gap-3 items-center">
+      <span id="b3-cloud"  class="status-badge badge-neutral">☁️ Awan: Netral</span>
+      <span id="b3-ground" class="status-badge badge-neutral">🏠 Tanah: Netral</span>
+      <span id="b3-rod"    class="status-badge badge-neutral">⚡ Penangkal: Siaga</span>
+    </div>
+    <div class="card p-3 mb-3 flex flex-wrap gap-3 items-center">
+      <button class="btn-act" onclick="sim3Reset()">↺ Reset</button>
+      <button class="btn-act btn-red"   onclick="s3BuildCharge()">⚡ Muati Awan (+1)</button>
+      <button class="btn-act btn-amber" onclick="s3MaxCharge()">⚡⚡ Muati Penuh</button>
+      <button class="btn-act btn-green" onclick="s3ToggleRod()">🗼 Pasang/Lepas Penangkal</button>
+    </div>
+    <div class="card p-3 text-xs text-gray-600 grid grid-cols-1 sm:grid-cols-3 gap-2">
+      <div class="flex gap-2 items-start"><span class="text-lg">1️⃣</span><span><strong class="text-indigo-700">Muati Awan:</strong> Klik "Muati Awan" berulang untuk mengakumulasi muatan negatif di awan badai.</span></div>
+      <div class="flex gap-2 items-start"><span class="text-lg">2️⃣</span><span><strong class="text-indigo-700">Tanpa Penangkal:</strong> Lepas penangkal lalu biarkan muatan penuh — petir menyambar gedung!</span></div>
+      <div class="flex gap-2 items-start"><span class="text-lg">3️⃣</span><span><strong class="text-indigo-700">Dengan Penangkal:</strong> Pasang penangkal dan amati petir dialirkan ke tanah dengan aman melalui konduktor.</span></div>
+    </div>
+
+    <!-- INKUIRI SIM 3 -->
+    <div class="inkuiri-panel">
+      <div class="inkuiri-header" onclick="toggleInkuiri('iq3')">
+        <h3>🔍 Aktivitas Inkuiri — Petir &amp; Teknologi Penangkalnya</h3>
+        <span class="chevron" id="chev-iq3">▼</span>
+      </div>
+      <div class="inkuiri-body" id="iq3">
+
+        <div class="inkuiri-section phase-pemantik">
+          <span class="badge-fase fase-1">🟣 FASE 1 — Pertanyaan Pemantik</span>
+          <h4>Fenomena Nyata di Sekitar Kita</h4>
+          <div class="pertanyaan-item">
+            <span class="nomor">1</span>
+            <span>Di Besuki, saat musim hujan sering ada petir. Mengapa gedung tinggi lebih berisiko disambar petir dibanding rumah rendah?</span>
+          </div>
+          <textarea class="jawaban-input" placeholder="Tulis penjelasan awalmu..."></textarea>
+          <div class="pertanyaan-item" style="margin-top:0.5rem">
+            <span class="nomor">2</span>
+            <span>Penangkal petir biasanya terbuat dari besi/logam runcing. Mengapa harus logam dan runcing — bukan plastik atau tumpul?</span>
+          </div>
+          <textarea class="jawaban-input" placeholder="Tulis dugaan awalmu..."></textarea>
+        </div>
+
+        <div class="inkuiri-section phase-hipotesis">
+          <span class="badge-fase fase-2">🔵 FASE 2 — Hipotesis</span>
+          <h4>Prediksi Sebelum Uji Coba</h4>
+          <div class="pertanyaan-item">
+            <span class="nomor">A</span>
+            <span>Tanpa penangkal petir, saat muatan awan penuh, petir akan menyambar:</span>
+          </div>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin:0.3rem 0 0.5rem 1.5rem">
+            <label style="font-size:0.8rem;font-weight:700;cursor:pointer"><input type="radio" name="hip3a" value="gedung"> 🏠 Gedung langsung</label>
+            <label style="font-size:0.8rem;font-weight:700;cursor:pointer"><input type="radio" name="hip3a" value="tanah"> 🌱 Tanah dulu</label>
+            <label style="font-size:0.8rem;font-weight:700;cursor:pointer"><input type="radio" name="hip3a" value="tidak"> ❌ Tidak menyambar</label>
+          </div>
+          <div class="pertanyaan-item">
+            <span class="nomor">B</span>
+            <span>Saat muatan awan mulai menumpuk, apa yang terjadi pada muatan di permukaan tanah (daerah bawah awan)?</span>
+          </div>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin:0.3rem 0 0.5rem 1.5rem">
+            <label style="font-size:0.8rem;font-weight:700;cursor:pointer"><input type="radio" name="hip3b" value="pos"> ⊕ Tanah jadi positif (induksi)</label>
+            <label style="font-size:0.8rem;font-weight:700;cursor:pointer"><input type="radio" name="hip3b" value="neg"> ⊖ Tanah jadi negatif</label>
+            <label style="font-size:0.8rem;font-weight:700;cursor:pointer"><input type="radio" name="hip3b" value="net"> ⚪ Tanah tetap netral</label>
+          </div>
+          <button class="btn-cek" onclick="cekHipotesis3()">✅ Cek Hipotesisku</button>
+          <div id="fb-hip3" class="feedback-box"></div>
+        </div>
+
+        <div class="inkuiri-section phase-eksplorasi">
+          <span class="badge-fase fase-3">🟢 FASE 3 — Eksplorasi Komparatif</span>
+          <h4>Uji Coba 2 Kondisi</h4>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem">
+            <div style="background:#FEE2E2;border-radius:0.5rem;padding:0.6rem 0.75rem">
+              <p style="font-size:0.8rem;font-weight:800;color:#991B1B;margin-bottom:0.3rem">🔴 Kondisi 1: Tanpa Penangkal</p>
+              <div class="langkah-item"><span class="langkah-icon">1</span><span>Pastikan penangkal TIDAK terpasang.</span></div>
+              <div class="langkah-item"><span class="langkah-icon">2</span><span>Klik "Muati Penuh" lalu tunggu petir.</span></div>
+              <div class="langkah-item"><span class="langkah-icon">3</span><span>Catat ke mana petir menyambar.</span></div>
+            </div>
+            <div style="background:#DCFCE7;border-radius:0.5rem;padding:0.6rem 0.75rem">
+              <p style="font-size:0.8rem;font-weight:800;color:#166534;margin-bottom:0.3rem">🟢 Kondisi 2: Dengan Penangkal</p>
+              <div class="langkah-item"><span class="langkah-icon">1</span><span>Reset → Pasang penangkal.</span></div>
+              <div class="langkah-item"><span class="langkah-icon">2</span><span>Klik "Muati Penuh" lalu tunggu petir.</span></div>
+              <div class="langkah-item"><span class="langkah-icon">3</span><span>Amati lintasan petir — kemana arahnya?</span></div>
+            </div>
+          </div>
+          <div class="highlight-tip" style="margin-top:0.5rem">💡 Amati juga simbol + di tanah saat muatan awan bertambah — ini adalah fenomena <strong>induksi elektrostatis</strong>!</div>
+        </div>
+
+        <div class="inkuiri-section phase-data">
+          <span class="badge-fase fase-4">🟡 FASE 4 — Data &amp; Pengamatan</span>
+          <h4>Tabel Perbandingan</h4>
+          <table class="tabel-data">
+            <thead>
+              <tr><th>Aspek</th><th>Tanpa Penangkal</th><th>Dengan Penangkal</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Sasaran petir</td><td><input placeholder="..."></td><td><input placeholder="..."></td></tr>
+              <tr><td>Kondisi gedung</td><td><input placeholder="..."></td><td><input placeholder="..."></td></tr>
+              <tr><td>Muatan tanah saat awan terisi</td><td><input placeholder="..."></td><td><input placeholder="..."></td></tr>
+              <tr><td>Prinsip listrik statis yang terlibat</td><td><input placeholder="..."></td><td><input placeholder="..."></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="inkuiri-section phase-analisis">
+          <span class="badge-fase fase-5">🔴 FASE 5 — Analisis &amp; Koneksi Kehidupan</span>
+          <h4>Berpikir Kritis</h4>
+          <div class="pertanyaan-item">
+            <span class="nomor">1</span>
+            <span>Jelaskan bagaimana penangkal petir melindungi gedung menggunakan prinsip konduksi dan grounding (pembumian)!</span>
+          </div>
+          <textarea class="jawaban-input" placeholder="Jelaskan mekanismenya..."></textarea>
+          <div class="pertanyaan-item" style="margin-top:0.5rem">
+            <span class="nomor">2</span>
+            <span>Mengapa di pesawat terbang tidak perlu penangkal petir meskipun terbang di dekat awan badai? (Petunjuk: pikirkan tentang kandang Faraday!)</span>
+          </div>
+          <textarea class="jawaban-input" placeholder="Tulis penjelasanmu..."></textarea>
+          <div class="pertanyaan-item" style="margin-top:0.5rem">
+            <span class="nomor">3</span>
+            <span><strong>Koneksi nyata:</strong> Di SMPN 3 Besuki, apakah gedung sekolah sudah memiliki penangkal petir? Jika belum, bagaimana kamu akan merekomendasikan pemasangannya kepada kepala sekolah?</span>
+          </div>
+          <textarea class="jawaban-input" placeholder="Tulis argumentasimu..."></textarea>
+        </div>
+
+        <div class="inkuiri-section phase-simpulan">
+          <span class="badge-fase" style="background:#F0FDF4;color:#166534;">✅ SIMPULAN</span>
+          <h4>Kesimpulan Saintifik</h4>
+          <textarea class="jawaban-input" placeholder="Tuliskan kesimpulanmu tentang cara kerja penangkal petir dan prinsip listrik statis yang mendasarinya dalam 3-4 kalimat..." style="min-height:80px"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ SIM 4: Hukum Coulomb ════════════════ -->
+  <div id="sim4" class="sim-panel">
+    <div class="card p-2 sm:p-3 mb-3">
+      <canvas id="canvas4" class="sim-canvas" width="800" height="380"></canvas>
+    </div>
+    <div class="card p-3 mb-3 flex flex-wrap gap-3 items-center">
+      <span id="b4-force" class="status-badge badge-neutral">⚡ Gaya: 0 N</span>
+      <span id="b4-type"  class="status-badge badge-neutral">↔ Jenis: –</span>
+    </div>
+    <div class="card p-3 mb-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div class="slider-wrap">
+        <label class="text-xs font-700 text-gray-600 flex justify-between mb-1">
+          <span>Muatan q₁</span><span id="lbl-q1" class="text-indigo-600">+3 μC</span>
+        </label>
+        <input type="range" id="sl-q1" min="-5" max="5" step="1" value="3" oninput="s4Update()">
+      </div>
+      <div class="slider-wrap">
+        <label class="text-xs font-700 text-gray-600 flex justify-between mb-1">
+          <span>Muatan q₂</span><span id="lbl-q2" class="text-indigo-600">-3 μC</span>
+        </label>
+        <input type="range" id="sl-q2" min="-5" max="5" step="1" value="-3" oninput="s4Update()">
+      </div>
+      <div class="slider-wrap">
+        <label class="text-xs font-700 text-gray-600 flex justify-between mb-1">
+          <span>Jarak r</span><span id="lbl-r" class="text-indigo-600">200 px</span>
+        </label>
+        <input type="range" id="sl-r" min="80" max="380" step="10" value="200" oninput="s4Update()">
+      </div>
+    </div>
+    <div class="card p-3 text-xs text-gray-600 grid grid-cols-1 sm:grid-cols-3 gap-2">
+      <div class="flex gap-2 items-start"><span class="text-lg">1️⃣</span><span><strong class="text-indigo-700">Atur Muatan:</strong> Geser slider q₁ dan q₂. Nilai positif = muatan +, negatif = muatan −, tengah = netral.</span></div>
+      <div class="flex gap-2 items-start"><span class="text-lg">2️⃣</span><span><strong class="text-indigo-700">Ubah Jarak:</strong> Geser slider jarak dan amati gaya berubah kuadratik (F ∝ 1/r²)!</span></div>
+      <div class="flex gap-2 items-start"><span class="text-lg">3️⃣</span><span><strong class="text-indigo-700">Amati Arah Panah:</strong> Panah merah = tolak-menolak (sejenis), panah biru = tarik-menarik (berlawanan).</span></div>
+    </div>
+
+    <!-- INKUIRI SIM 4 -->
+    <div class="inkuiri-panel">
+      <div class="inkuiri-header" onclick="toggleInkuiri('iq4')">
+        <h3>🔍 Aktivitas Inkuiri — Menemukan Hukum Coulomb</h3>
+        <span class="chevron" id="chev-iq4">▼</span>
+      </div>
+      <div class="inkuiri-body" id="iq4">
+
+        <div class="inkuiri-section phase-pemantik">
+          <span class="badge-fase fase-1">🟣 FASE 1 — Pertanyaan Pemantik</span>
+          <h4>Pola yang Tersembunyi</h4>
+          <div class="pertanyaan-item">
+            <span class="nomor">1</span>
+            <span>Jika jarak antara dua muatan diperjauh menjadi 2× lipat, kira-kira gaya akan menjadi berapa kali semula? Tulis tebakan awalmu!</span>
+          </div>
+          <textarea class="jawaban-input" placeholder="Tebakan: gaya menjadi ___× semula karena..."></textarea>
+          <div class="pertanyaan-item" style="margin-top:0.5rem">
+            <span class="nomor">2</span>
+            <span>Apakah muatan yang lebih besar menghasilkan gaya yang lebih besar? Bagaimana hubungannya — linear atau tidak?</span>
+          </div>
+          <textarea class="jawaban-input" placeholder="Tulis prediksimu..."></textarea>
+        </div>
+
+        <div class="inkuiri-section phase-hipotesis">
+          <span class="badge-fase fase-2">🔵 FASE 2 — Hipotesis Matematis</span>
+          <h4>Buat Prediksi Sebelum Mengisi Data</h4>
+          <p style="font-size:0.8rem;font-weight:600;color:#374151;margin-bottom:0.5rem">Atur q₁=+3, q₂=-3, r=100 px. Catat gayanya sebagai F₀. Prediksi F saat r diubah:</p>
+          <table class="tabel-data">
+            <thead>
+              <tr><th>Jarak r (px)</th><th>Prediksi F (×F₀)</th><th>Hasil Simulasi F (N)</th><th>Benar?</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>100 (acuan)</td><td>F₀ = 1×</td><td><input placeholder="... N"></td><td>–</td></tr>
+              <tr><td>200 (2×)</td><td><input placeholder="Prediksi: ... ×"></td><td><input placeholder="... N"></td><td><input placeholder="Y/N"></td></tr>
+              <tr><td>300 (3×)</td><td><input placeholder="Prediksi: ... ×"></td><td><input placeholder="... N"></td><td><input placeholder="Y/N"></td></tr>
+            </tbody>
+          </table>
+          <button class="btn-cek" onclick="cekHipotesis4()">🔎 Analisis Polanya</button>
+          <div id="fb-hip4" class="feedback-box"></div>
+        </div>
+
+        <div class="inkuiri-section phase-eksplorasi">
+          <span class="badge-fase fase-3">🟢 FASE 3 — Eksplorasi Sistematis</span>
+          <h4>Tiga Seri Percobaan</h4>
+          <div style="display:grid;gap:0.5rem">
+            <div style="background:#EFF6FF;border-radius:0.5rem;padding:0.5rem 0.75rem">
+              <p style="font-size:0.8rem;font-weight:800;color:#1E40AF">📐 Seri 1: Variasi Jarak (q₁=+3, q₂=-3, ubah r)</p>
+              <p style="font-size:0.75rem;color:#374151;font-weight:600">Geser r dari 80 → 100 → 150 → 200 → 300 → 380. Catat gaya setiap langkah.</p>
+            </div>
+            <div style="background:#F0FDF4;border-radius:0.5rem;padding:0.5rem 0.75rem">
+              <p style="font-size:0.8rem;font-weight:800;color:#166534">⚡ Seri 2: Variasi Muatan (r=200, ubah q₁)</p>
+              <p style="font-size:0.75rem;color:#374151;font-weight:600">Set r=200, q₂=-3. Ubah q₁ dari 1 → 2 → 3 → 4 → 5. Amati pola gayanya.</p>
+            </div>
+            <div style="background:#FEF3C7;border-radius:0.5rem;padding:0.5rem 0.75rem">
+              <p style="font-size:0.8rem;font-weight:800;color:#92400E">🔄 Seri 3: Jenis Muatan (r=200, q₁=+3)</p>
+              <p style="font-size:0.75rem;color:#374151;font-weight:600">Ubah q₂ dari +3 (sejenis) ke -3 (berbeda). Amati arah panah dan warnanya!</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="inkuiri-section phase-data">
+          <span class="badge-fase fase-4">🟡 FASE 4 — Tabel Data Lengkap</span>
+          <h4>Seri 1: Variasi Jarak</h4>
+          <table class="tabel-data" style="margin-bottom:0.75rem">
+            <thead>
+              <tr><th>r (px)</th><th>Gaya F (N)</th><th>F relatif terhadap r=80</th><th>Pola: F ∝ ?</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>80</td><td><input placeholder="...N"></td><td>1×</td><td rowspan="5" style="vertical-align:middle"><input placeholder="Tulis pola..."></td></tr>
+              <tr><td>120</td><td><input placeholder="...N"></td><td><input placeholder="...×"></td></tr>
+              <tr><td>200</td><td><input placeholder="...N"></td><td><input placeholder="...×"></td></tr>
+              <tr><td>300</td><td><input placeholder="...N"></td><td><input placeholder="...×"></td></tr>
+              <tr><td>380</td><td><input placeholder="...N"></td><td><input placeholder="...×"></td></tr>
+            </tbody>
+          </table>
+          <h4 style="margin-bottom:0.3rem">Seri 2: Variasi Muatan</h4>
+          <table class="tabel-data">
+            <thead>
+              <tr><th>q₁ (μC)</th><th>Gaya F (N)</th><th>F saat q₁ dinaikkan 2×</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>1</td><td><input placeholder="...N"></td><td rowspan="5" style="vertical-align:middle"><input placeholder="Pola..."></td></tr>
+              <tr><td>2</td><td><input placeholder="...N"></td></tr>
+              <tr><td>3</td><td><input placeholder="...N"></td></tr>
+              <tr><td>4</td><td><input placeholder="...N"></td></tr>
+              <tr><td>5</td><td><input placeholder="...N"></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="inkuiri-section phase-analisis">
+          <span class="badge-fase fase-5">🔴 FASE 5 — Penemuan Hukum</span>
+          <h4>Dari Data ke Hukum Fisika!</h4>
+          <div class="pertanyaan-item">
+            <span class="nomor">1</span>
+            <span>Dari Seri 1, saat jarak r dijadikan 2×, gaya berubah menjadi ____× semula. Ini menunjukkan F berbanding ______ dengan r. Tulis persamaannya: <strong>F ∝ ____</strong></span>
+          </div>
+          <textarea class="jawaban-input" placeholder="Tulis pola matematisnya..."></textarea>
+          <div class="pertanyaan-item" style="margin-top:0.5rem">
+            <span class="nomor">2</span>
+            <span>Dari Seri 2, saat q₁ dijadikan 2×, gaya berubah menjadi ____× semula. Ini menunjukkan F berbanding ______ dengan q. Tulis persamaannya: <strong>F ∝ ____</strong></span>
+          </div>
+          <textarea class="jawaban-input" placeholder="Tulis pola matematisnya..."></textarea>
+          <div class="pertanyaan-item" style="margin-top:0.5rem">
+            <span class="nomor">3</span>
+            <span>Gabungkan kedua pola di atas — tuliskan rumus lengkap Hukum Coulomb yang kamu temukan sendiri!</span>
+          </div>
+          <textarea class="jawaban-input" placeholder="F = ..."></textarea>
+          <div class="highlight-tip">🏆 Kamu baru saja menemukan kembali Hukum Coulomb (1785) — sama seperti yang ditemukan Charles-Augustin de Coulomb!</div>
+          <div class="pertanyaan-item" style="margin-top:0.5rem">
+            <span class="nomor">4</span>
+            <span><strong>Aplikasi nyata:</strong> Dua muatan +5 μC terpisah 1 meter. Berapa gaya tolaknya? Hitung menggunakan rumus yang kamu temukan! (k = 9×10⁹ N·m²/C²)</span>
+          </div>
+          <textarea class="jawaban-input" placeholder="Penyelesaian: F = k × q₁ × q₂ / r² = ..."></textarea>
+        </div>
+
+        <div class="inkuiri-section phase-simpulan">
+          <span class="badge-fase" style="background:#F0FDF4;color:#166534;">✅ SIMPULAN — Hukum Coulomb</span>
+          <h4>Aku Menemukan Bahwa...</h4>
+          <div style="display:grid;gap:0.4rem;font-size:0.8rem;font-weight:600;color:#374151">
+            <div>Gaya Coulomb berbanding <input style="border:none;border-bottom:2px solid #6366F1;outline:none;width:80px;font-family:Nunito,sans-serif;font-weight:700;font-size:0.8rem;color:#4338CA"> dengan hasil kali muatan (q₁·q₂)</div>
+            <div>Gaya Coulomb berbanding <input style="border:none;border-bottom:2px solid #6366F1;outline:none;width:80px;font-family:Nunito,sans-serif;font-weight:700;font-size:0.8rem;color:#4338CA"> dengan kuadrat jarak (r²)</div>
+            <div>Muatan sejenis akan saling <input style="border:none;border-bottom:2px solid #6366F1;outline:none;width:80px;font-family:Nunito,sans-serif;font-weight:700;font-size:0.8rem;color:#4338CA">, sedangkan muatan beda jenis akan saling <input style="border:none;border-bottom:2px solid #6366F1;outline:none;width:80px;font-family:Nunito,sans-serif;font-weight:700;font-size:0.8rem;color:#4338CA"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="text-center text-xs text-gray-400 mt-3">Dibuat untuk SMPN 3 Besuki · Media Pembelajaran Interaktif Berbasis Inkuiri · IPA Kelas 9</p>
+</div>
+
+<script>
+// ─── Tab switching ──────────────────────────────────────────────────────
+function switchTab(id) {
+  document.querySelectorAll('.sim-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const idx = ['sim1','sim2','sim3','sim4'].indexOf(id);
+  document.querySelectorAll('.tab-btn')[idx].classList.add('active');
+}
+
+// ─── Inkuiri toggle ─────────────────────────────────────────────────────
+function toggleInkuiri(id) {
+  const body = document.getElementById(id);
+  const chev = document.getElementById('chev-' + id);
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  chev.classList.toggle('open', !isOpen);
+}
+
+// ─── Feedback helpers ───────────────────────────────────────────────────
+function showFb(id, html, type) {
+  const el = document.getElementById(id);
+  el.innerHTML = html;
+  el.className = 'feedback-box feedback-' + type;
+  el.style.display = 'block';
+}
+
+// ─── Cek Hipotesis Sim 1 ────────────────────────────────────────────────
+function cekHipotesis1() {
+  const a = document.querySelector('input[name="hip1a"]:checked');
+  const b = document.querySelector('input[name="hip1b"]:checked');
+  if (!a || !b) { showFb('fb-hip1','⚠️ Pilih jawaban untuk kedua pertanyaan dulu!','info'); return; }
+  let ok1 = a.value === 'neg';
+  let ok2 = b.value === 'tarik';
+  if (ok1 && ok2) showFb('fb-hip1','✅ Benar! Balon mendapat elektron → bermuatan NEGATIF. Dinding terpolarisasi → sisi terdekat jadi positif → tarik-menarik (induksi elektrostatis)!','benar');
+  else if (!ok1 && !ok2) showFb('fb-hip1','❌ Keduanya belum tepat. Coba gosok balon di simulasi, lalu perhatikan status badge — apa muatan balon setelah digosok? Lalu dekatkan ke dinding dan amati gerakannya!','salah');
+  else showFb('fb-hip1','🟡 Satu benar, satu perlu diperbaiki! Gunakan simulasi untuk memeriksa. Perhatikan: balon menerima elektron dari wol karena afinitas elektron karet lebih tinggi dari wol.','info');
+}
+
+// ─── Cek Hipotesis Sim 2 ────────────────────────────────────────────────
+function cekHipotesis2() {
+  const a = document.querySelector('input[name="hip2a"]:checked');
+  const b = document.querySelector('input[name="hip2b"]:checked');
+  const c = document.querySelector('input[name="hip2c"]:checked');
+  if (!a || !b || !c) { showFb('fb-hip2','⚠️ Pilih jawaban untuk semua pertanyaan!','info'); return; }
+  const ok = a.value==='buka' && b.value==='tutup' && c.value==='pos';
+  if (ok) showFb('fb-hip2','✅ Sempurna! Induksi: daun membuka saat batang dekat, menutup lagi saat dijauhkan (sementara). Konduksi dengan batang negatif: elektron mengalir ke batang → elektroskop kehilangan elektron → menjadi POSITIF!','benar');
+  else showFb('fb-hip2','🟡 Belum semua tepat! Petunjuk: (A) Induksi terjadi tanpa sentuhan — muatan terpisah sementara. (B) Saat batang dijauhkan, muatan kembali ke posisi awal. (C) Batang negatif menarik elektron dari elektroskop ke batang → elektroskop kehilangan elektron → menjadi positif!','info');
+}
+
+// ─── Cek Hipotesis Sim 3 ────────────────────────────────────────────────
+function cekHipotesis3() {
+  const a = document.querySelector('input[name="hip3a"]:checked');
+  const b = document.querySelector('input[name="hip3b"]:checked');
+  if (!a || !b) { showFb('fb-hip3','⚠️ Pilih semua jawaban!','info'); return; }
+  const ok1 = a.value === 'gedung';
+  const ok2 = b.value === 'pos';
+  if (ok1 && ok2) showFb('fb-hip3','✅ Benar! Tanpa penangkal, petir mencari jalur konduktif terpendek ke tanah → menyambar gedung. Muatan awan (−) menginduksi muatan (+) di tanah melalui polarisasi elektrostatis!','benar');
+  else showFb('fb-hip3','🟡 Periksa lagi! Petunjuk: (A) Tanpa penangkal, petir akan menyambar objek tertinggi dengan konduktivitas terbaik. (B) Awan bermuatan negatif → induksi → sisi tanah di bawah awan menjadi positif. Amati simbol + di tanah saat muatan awan bertambah!','info');
+}
+
+// ─── Cek Hipotesis Sim 4 ────────────────────────────────────────────────
+function cekHipotesis4() {
+  showFb('fb-hip4','🔎 Analisis Data: Saat r dijadikan 2× → F menjadi 1/4× semula (bukan 1/2×). Ini adalah hubungan KUADRAT TERBALIK (F ∝ 1/r²). Coba bandingkan datamu — apakah polanya sudah terlihat? Hitung rasio F₀/F setiap kali r bertambah!','info');
+}
+
+// ─── Utils ─────────────────────────────────────────────────────────────
+function clamp(v,lo,hi){ return Math.max(lo,Math.min(hi,v)); }
+function lerp(a,b,t){ return a+(b-a)*t; }
+function distPt(ax,ay,bx,by){ return Math.hypot(ax-bx,ay-by); }
+
+// ════════════════════════════════════════════════════════
+// SIM 1 – Balon & Kain Wol
+// ════════════════════════════════════════════════════════
+var s1ShowCharges = true;
+(function(){
+  const cv = document.getElementById('canvas1');
+  const ctx = cv.getContext('2d');
+  const W=800, H=400;
+
+  function toC(cx,cy){ const r=cv.getBoundingClientRect(),s=W/r.width; return {x:(cx-r.left)*s,y:(cy-r.top)*s}; }
+
+  const WOOL={x:55,y:115,w:110,h:170,cx(){return this.x+this.w/2;},cy(){return this.y+this.h/2;}};
+  const WALL={x:686,y:70,w:34,h:265,cx(){return this.x;}};
+  const BR=56;
+  let bx=395,by_=205,bCharge=0,wCharge=0;
+  let drag=false,dox=0,doy=0,lastRX=null,rubScore=0;
+  let velX=0,velY=0,parts=[];
+  const RUB_MAX=8, DAMP=0.82;
+
+  function touchWool(){ return bx-BR<WOOL.x+WOOL.w+10&&bx+BR>WOOL.x-10&&by_-BR<WOOL.y+WOOL.h&&by_+BR>WOOL.y; }
+  function nearWall(){ return bx+BR>WALL.x-80; }
+  function nearWool(){ return bx-BR<WOOL.x+WOOL.w+90&&!touchWool(); }
+
+  function tryRub(cx){ if(!touchWool()){lastRX=null;return;} if(lastRX===null){lastRX=cx;return;} const d=Math.abs(cx-lastRX);lastRX=cx; if(d>3){ rubScore=Math.min(RUB_MAX,rubScore+0.35); const nc=-Math.round(rubScore); if(nc!==bCharge){ bCharge=nc; wCharge=-nc; for(let i=0;i<5;i++) parts.push({x:WOOL.cx()+(Math.random()-.5)*40,y:WOOL.cy()+(Math.random()-.5)*40,vx:(Math.random()-.5)*3+(bx>WOOL.cx()?2:-2),vy:(Math.random()-.5)*3-1,life:1}); } } }
+
+  function physics(){ if(drag){velX=0;velY=0;return;} let fx=0,fy=0;
+    if(bCharge<0&&nearWool()){ const s=Math.abs(bCharge)/RUB_MAX*2.5,dx=WOOL.cx()-bx,dy=WOOL.cy()-by_,d=Math.hypot(dx,dy)||1; fx+=dx/d*s;fy+=dy/d*s; }
+    if(bCharge<0&&nearWall()){ const s=Math.abs(bCharge)/RUB_MAX*1.2,ws=WALL.x-BR-4; if(bx<ws) fx+=s*0.6; }
+    velX=(velX+fx)*DAMP; velY=(velY+fy)*DAMP;
+    bx=clamp(bx+velX,BR+5,WALL.x-BR-2); by_=clamp(by_+velY,BR+10,H-BR-10);
+  }
+
+  function drawSym(cx,cy,width,height,charge,isWall){
+    if(!s1ShowCharges) return;
+    const total=6,cols=3,rows=4; let idx=0;
+    for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+      const px=cx-width*0.35+(c/(cols-1))*width*0.7, py=cy-height*0.35+(r/(rows-1))*height*0.7;
+      let sym,col;
+      if(isWall&&bCharge<0&&nearWall()){ if(c===0){sym='+';col='#EF4444';}else if(c===2){sym='−';col='#3B82F6';}else{sym=idx<total/2?'+':'−';col=idx<total/2?'#EF4444':'#3B82F6';} }
+      else{ const neg=idx>=(total+clamp(charge,-total,0)); sym=neg?'−':'+'; col=neg?'#3B82F6':'#EF4444'; }
+      ctx.font='bold 13px Nunito,sans-serif';ctx.fillStyle=col;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(sym,px,py); idx++;
+    }
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const bg=ctx.createLinearGradient(0,0,W,H); bg.addColorStop(0,'#F0F7FF');bg.addColorStop(1,'#EEF2FF'); ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle='#CBD5E1';ctx.lineWidth=2;ctx.setLineDash([8,6]);ctx.beginPath();ctx.moveTo(20,372);ctx.lineTo(780,372);ctx.stroke();ctx.setLineDash([]);
+    const wg=ctx.createLinearGradient(WOOL.x,WOOL.y,WOOL.x+WOOL.w,WOOL.y+WOOL.h); wg.addColorStop(0,'#A16207');wg.addColorStop(.5,'#CA8A04');wg.addColorStop(1,'#92400E');
+    ctx.beginPath();ctx.roundRect(WOOL.x,WOOL.y,WOOL.w,WOOL.h,14);ctx.fillStyle=wg;ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,0.18)';ctx.lineWidth=3;
+    for(let fy=WOOL.y+18;fy<WOOL.y+WOOL.h-10;fy+=18){ctx.beginPath();for(let fx=WOOL.x+8;fx<WOOL.x+WOOL.w-8;fx+=10){ctx.moveTo(fx,fy);ctx.bezierCurveTo(fx+3,fy-6,fx+7,fy+6,fx+10,fy);}ctx.stroke();}
+    ctx.strokeStyle='#78350F';ctx.lineWidth=2.5;ctx.beginPath();ctx.roundRect(WOOL.x,WOOL.y,WOOL.w,WOOL.h,14);ctx.stroke();
+    if(wCharge>0){ctx.strokeStyle='rgba(239,68,68,0.5)';ctx.lineWidth=3;ctx.beginPath();ctx.roundRect(WOOL.x-3,WOOL.y-3,WOOL.w+6,WOOL.h+6,17);ctx.stroke();}
+    drawSym(WOOL.cx(),WOOL.cy(),WOOL.w*.8,WOOL.h*.8,wCharge,false);
+    const wlg=ctx.createLinearGradient(WALL.x,WALL.y,WALL.x+WALL.w,WALL.y); wlg.addColorStop(0,'#94A3B8');wlg.addColorStop(1,'#CBD5E1');
+    ctx.beginPath();ctx.roundRect(WALL.x,WALL.y,WALL.w,WALL.h,[0,8,8,0]);ctx.fillStyle=wlg;ctx.fill();
+    ctx.strokeStyle='rgba(71,85,105,0.35)';ctx.lineWidth=1.5;
+    for(let r=0;r*30<WALL.h;r++){ctx.beginPath();ctx.moveTo(WALL.x,WALL.y+r*30);ctx.lineTo(WALL.x+WALL.w,WALL.y+r*30);ctx.stroke();const off=(r%2===0)?WALL.w/2:0;ctx.beginPath();ctx.moveTo(WALL.x+off,WALL.y+r*30);ctx.lineTo(WALL.x+off,WALL.y+(r+1)*30);ctx.stroke();}
+    ctx.strokeStyle='#64748B';ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(WALL.x,WALL.y,WALL.w,WALL.h,[0,8,8,0]);ctx.stroke();
+    if(bCharge<0&&nearWall()){ctx.strokeStyle='rgba(239,68,68,0.45)';ctx.lineWidth=3;ctx.beginPath();ctx.roundRect(WALL.x-3,WALL.y-3,WALL.w+6,WALL.h+6,[0,11,11,0]);ctx.stroke();}
+    drawSym(WALL.x+WALL.w*.4,WALL.y+WALL.h/2,WALL.w*.7,WALL.h*.7,bCharge<0&&nearWall()?-2:0,true);
+    ctx.beginPath();ctx.ellipse(bx+6,by_+BR*.85,BR*.65,BR*.18,0,0,Math.PI*2);ctx.fillStyle='rgba(0,0,0,0.12)';ctx.fill();
+    const bg2=ctx.createRadialGradient(bx-BR*.3,by_-BR*.3,BR*.05,bx,by_,BR); bg2.addColorStop(0,'#FEF9C3');bg2.addColorStop(.4,'#FDE047');bg2.addColorStop(.8,'#EAB308');bg2.addColorStop(1,'#CA8A04');
+    ctx.beginPath();ctx.arc(bx,by_,BR,0,Math.PI*2);ctx.fillStyle=bg2;ctx.fill();
+    if(bCharge<0){const gr=Math.abs(bCharge)/RUB_MAX;ctx.beginPath();ctx.arc(bx,by_,BR+6,0,Math.PI*2);ctx.strokeStyle=`rgba(59,130,246,${.3+gr*.4})`;ctx.lineWidth=3+gr*3;ctx.stroke();}
+    ctx.beginPath();ctx.ellipse(bx-BR*.28,by_-BR*.32,BR*.22,BR*.14,-Math.PI/5,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,0.65)';ctx.fill();
+    ctx.beginPath();ctx.arc(bx,by_,BR,0,Math.PI*2);ctx.strokeStyle='#A16207';ctx.lineWidth=2;ctx.stroke();
+    ctx.beginPath();ctx.arc(bx,by_+BR+2,5,0,Math.PI*2);ctx.fillStyle='#B45309';ctx.fill();
+    ctx.beginPath();ctx.moveTo(bx,by_+BR+7);ctx.quadraticCurveTo(bx+12,by_+BR+40,bx+4,by_+BR+75);ctx.strokeStyle='#92400E';ctx.lineWidth=1.5;ctx.stroke();
+    drawSym(bx,by_,BR*1.2,BR*1.2,bCharge,false);
+    parts=parts.filter(p=>p.life>0); parts.forEach(p=>{ctx.globalAlpha=p.life;ctx.font='bold 16px Nunito,sans-serif';ctx.fillStyle='#3B82F6';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('−',p.x,p.y);p.x+=p.vx;p.y+=p.vy;p.life-=0.04;}); ctx.globalAlpha=1;
+    ctx.font='bold 13px Nunito,sans-serif';ctx.textAlign='center';ctx.textBaseline='top';
+    ctx.fillStyle='#78350F';ctx.fillText('Kain Wol',WOOL.cx(),WOOL.y+WOOL.h+8);
+    ctx.fillStyle='#92400E';ctx.fillText('Balon',bx,by_+BR+16);
+    ctx.fillStyle='#475569';ctx.fillText('Dinding',WALL.cx()+WALL.w/2+2,WALL.y+WALL.h+8);
+    if(touchWool()&&bCharge>-RUB_MAX){ctx.font='bold 12px Nunito,sans-serif';ctx.fillStyle='#6366F1';ctx.fillText('← Geser untuk menggosok! →',bx,by_-BR-22);}
+  }
+
+  function updateUI(){
+    const bw=document.getElementById('b1-wool'),bb=document.getElementById('b1-bal'),bwl=document.getElementById('b1-wall');
+    const info=document.getElementById('b1-info'),infotxt=document.getElementById('b1-infotxt');
+    bw.className=wCharge>0?'status-badge badge-pos':'status-badge badge-neutral'; bw.textContent=wCharge>0?'🧶 Kain Wol: + Positif':'🧶 Kain Wol: Netral';
+    bb.className=bCharge<0?'status-badge badge-neg':'status-badge badge-neutral'; bb.textContent=bCharge<0?'🎈 Balon: − Negatif':'🎈 Balon: Netral';
+    bwl.className=bCharge<0&&nearWall()?'status-badge badge-pos':'status-badge badge-neutral'; bwl.textContent=bCharge<0&&nearWall()?'🧱 Dinding: Terpolarisasi':'🧱 Dinding: Netral';
+    let msg='';
+    if(touchWool()&&bCharge===0) msg='💡 Gosokkan balon ke kain wol untuk memindahkan elektron!';
+    else if(touchWool()&&bCharge<0) msg='⚡ Elektron berpindah! Balon (−) dan Kain Wol (+).';
+    else if(bCharge<0&&nearWool()) msg='🔴 Gaya tarik-menarik! Balon (−) tertarik ke Kain Wol (+).';
+    else if(bCharge<0&&nearWall()) msg='🔵 Polarisasi! Muatan (+) di dinding menarik balon (−).';
+    else if(bCharge<0) msg='🎈 Balon bermuatan negatif. Coba dekatkan ke wol atau dinding!';
+    if(msg){infotxt.textContent=msg;info.classList.remove('hidden');}else info.classList.add('hidden');
+  }
+
+  cv.addEventListener('pointerdown',e=>{e.preventDefault();const{x,y}=toC(e.clientX,e.clientY);if(distPt(x,y,bx,by_)<BR+10){drag=true;dox=bx-x;doy=by_-y;lastRX=null;cv.setPointerCapture(e.pointerId);}});
+  cv.addEventListener('pointermove',e=>{e.preventDefault();if(!drag)return;const{x,y}=toC(e.clientX,e.clientY);bx=clamp(x+dox,BR+5,WALL.x-BR-2);by_=clamp(y+doy,BR+10,H-BR-10);tryRub(x);});
+  cv.addEventListener('pointerup',()=>drag=false);cv.addEventListener('pointercancel',()=>drag=false);
+
+  function resize(){ const pw=cv.parentElement.clientWidth-16,mw=Math.min(pw,W); cv.style.width=mw+'px'; cv.style.height=(mw*H/W)+'px'; }
+  resize(); window.addEventListener('resize',resize);
+
+  window.sim1Reset=function(){ bx=395;by_=205;bCharge=0;wCharge=0;rubScore=0;velX=0;velY=0;lastRX=null;parts=[]; };
+  (function loop(){ physics();draw();updateUI();requestAnimationFrame(loop); })();
+})();
+
+// ════════════════════════════════════════════════════════
+// SIM 2 – Elektroskop
+// ════════════════════════════════════════════════════════
+(function(){
+  const cv=document.getElementById('canvas2');
+  const ctx=cv.getContext('2d');
+  const W=800,H=440;
+
+  let scopeCharge=0;
+  let rodType=null;
+  let rodX=640, rodY=155;
+  let rodNear=false;
+  let dragRod=false,rdox=0,rdoy=0;
+  let leafAnim=0;
+  let parts=[];
+
+  const KNOP={x:295,y:88,r:30};
+  const TUBE={x:280,y:118,w:30,h:148};
+  const PIVOT={x:295,y:270};
+  const LEAF_L=58;
+
+  function toC(cx,cy){ const r=cv.getBoundingClientRect(),s=W/r.width; return {x:(cx-r.left)*s,y:(cy-r.top)*s}; }
+  function getRodQ(){ return rodType==='pos'?4:rodType==='neg'?-4:0; }
+
+  function effectLeaf(){
+    if(rodNear&&rodType&&scopeCharge===0) return Math.abs(getRodQ())*0.75;
+    return Math.abs(scopeCharge);
+  }
+
+  function physics(){
+    rodNear=rodType!==null&&distPt(rodX,rodY,KNOP.x,KNOP.y)<130;
+    leafAnim=lerp(leafAnim,Math.min(effectLeaf()/5*72,72),0.09);
+  }
+
+  function updateParts(){ parts=parts.filter(p=>p.life>0); parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.1;p.life-=0.03;}); }
+
+  function drawRod(){
+    if(!rodType) return;
+    const rw=130,rh=28,rx=rodX-rw/2,ry=rodY-rh/2;
+    const col=rodType==='neg'?['#60A5FA','#2563EB']:['#FCD34D','#D97706'];
+    const g=ctx.createLinearGradient(rx,ry,rx,ry+rh); g.addColorStop(0,col[0]);g.addColorStop(1,col[1]);
+    ctx.beginPath();ctx.roundRect(rx,ry,rw,rh,9);ctx.fillStyle=g;ctx.fill();
+    ctx.strokeStyle=rodType==='neg'?'#1E40AF':'#92400E';ctx.lineWidth=2;ctx.stroke();
+    ctx.font='bold 13px Nunito,sans-serif';ctx.fillStyle='white';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(rodType==='neg'?'⊖ Batang (−)':'⊕ Batang (+)',rodX,rodY);
+    const sym=rodType==='neg'?'−':'+';const symc=rodType==='neg'?'#BFDBFE':'#FEF3C7';
+    for(let i=0;i<7;i++){const a=i/7*Math.PI*2,px=rodX+Math.cos(a)*(rw/2+14),py=rodY+Math.sin(a)*16;ctx.font='bold 11px Nunito,sans-serif';ctx.fillStyle=symc;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(sym,px,py);}
+  }
+
+  function drawInductArrow(){
+    if(!rodNear||!rodType||scopeCharge!==0) return;
+    const dir=getRodQ()>0?1:-1;
+    ctx.save();ctx.globalAlpha=0.6;
+    const col=dir>0?'#3B82F6':'#EF4444';
+    ctx.strokeStyle=col;ctx.lineWidth=2.5;ctx.setLineDash([5,4]);
+    ctx.beginPath();ctx.moveTo(KNOP.x,KNOP.y+KNOP.r);ctx.lineTo(KNOP.x,PIVOT.y+20);ctx.stroke();ctx.setLineDash([]);
+    const ay=dir<0?KNOP.y+KNOP.r:PIVOT.y+20;const ad=dir<0?1:-1;
+    ctx.beginPath();ctx.moveTo(KNOP.x,ay);ctx.lineTo(KNOP.x-7,ay-ad*12);ctx.lineTo(KNOP.x+7,ay-ad*12);ctx.closePath();ctx.fillStyle=col;ctx.fill();
+    ctx.font='bold 11px Nunito,sans-serif';ctx.fillStyle=col;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('induksi',KNOP.x+8,KNOP.y+KNOP.r+20);
+    ctx.restore();
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const bg=ctx.createLinearGradient(0,0,W,H);bg.addColorStop(0,'#F8FAFF');bg.addColorStop(1,'#EEF2FF');ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+    ctx.beginPath();ctx.roundRect(190,362,210,20,5);ctx.fillStyle='#94A3B8';ctx.fill();
+    ctx.beginPath();ctx.roundRect(289,265,12,98,3);ctx.fillStyle='#CBD5E1';ctx.fill();
+    const tg=ctx.createLinearGradient(TUBE.x,0,TUBE.x+TUBE.w,0);tg.addColorStop(0,'rgba(186,230,253,0.45)');tg.addColorStop(.4,'rgba(255,255,255,0.7)');tg.addColorStop(1,'rgba(186,230,253,0.35)');
+    ctx.beginPath();ctx.roundRect(TUBE.x,TUBE.y,TUBE.w,TUBE.h,5);ctx.fillStyle=tg;ctx.fill();ctx.strokeStyle='rgba(148,163,184,0.6)';ctx.lineWidth=2;ctx.stroke();
+    ctx.beginPath();ctx.moveTo(PIVOT.x,TUBE.y);ctx.lineTo(PIVOT.x,PIVOT.y);ctx.strokeStyle='#94A3B8';ctx.lineWidth=4;ctx.stroke();
+    const la=leafAnim*Math.PI/180;
+    const lc=scopeCharge!==0?(scopeCharge>0?'#EF4444':'#3B82F6'):(rodNear&&rodType?'#6366F1':'#64748B');
+    [-1,1].forEach(side=>{
+      ctx.save();ctx.translate(PIVOT.x,PIVOT.y);ctx.rotate(side*la);
+      ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,LEAF_L);ctx.strokeStyle=lc;ctx.lineWidth=5;ctx.lineCap='round';ctx.stroke();
+      ctx.beginPath();ctx.ellipse(0,LEAF_L,6,15,0,0,Math.PI*2);ctx.fillStyle=lc;ctx.globalAlpha=0.75;ctx.fill();ctx.globalAlpha=1;
+      ctx.restore();
+    });
+    const kg=ctx.createRadialGradient(KNOP.x-9,KNOP.y-9,4,KNOP.x,KNOP.y,KNOP.r);kg.addColorStop(0,'#E2E8F0');kg.addColorStop(1,'#94A3B8');
+    ctx.beginPath();ctx.arc(KNOP.x,KNOP.y,KNOP.r,0,Math.PI*2);ctx.fillStyle=kg;ctx.fill();
+    if(rodNear){ctx.strokeStyle='rgba(99,102,241,0.65)';ctx.lineWidth=3;}else{ctx.strokeStyle='#64748B';ctx.lineWidth=2;}ctx.stroke();
+    if(scopeCharge!==0){ctx.beginPath();ctx.arc(KNOP.x,KNOP.y,KNOP.r+7,0,Math.PI*2);ctx.strokeStyle=scopeCharge>0?'rgba(239,68,68,0.4)':'rgba(59,130,246,0.4)';ctx.lineWidth=4;ctx.stroke();}
+    const total=Math.min(Math.abs(scopeCharge),4);
+    for(let i=0;i<total;i++){const a=i/Math.max(total,1)*Math.PI*1.4-Math.PI*.7;const px=KNOP.x+Math.cos(a)*KNOP.r*.65,py=KNOP.y+Math.sin(a)*KNOP.r*.65;ctx.font='bold 14px Nunito,sans-serif';ctx.fillStyle=scopeCharge>0?'#EF4444':'#3B82F6';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(scopeCharge>0?'+':'−',px,py);}
+    drawInductArrow();
+    drawRod();
+    parts.forEach(p=>{ctx.globalAlpha=p.life;ctx.font='bold 15px Nunito,sans-serif';ctx.fillStyle=p.sign>0?'#EF4444':'#3B82F6';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(p.sign>0?'+':'−',p.x,p.y);});ctx.globalAlpha=1;
+    ctx.font='bold 13px Nunito,sans-serif';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillStyle='#475569';ctx.fillText('Elektroskop Daun Emas',295,390);
+    ctx.font='bold 12px Nunito,sans-serif';ctx.fillStyle='#475569';ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText(`Sudut: ${Math.round(leafAnim)}°`,30,390);
+    if(!rodType){ctx.font='14px Nunito,sans-serif';ctx.fillStyle='rgba(99,102,241,0.7)';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('← Klik "Batang Negatif" atau "Batang Positif" lalu seret mendekati knop',W/2,H/2+60);}
+    if(rodNear&&scopeCharge===0){ctx.font='bold 12px Nunito,sans-serif';ctx.fillStyle='#6366F1';ctx.textAlign='center';ctx.fillText('🔮 Induksi aktif! Muatan terpisah tanpa menyentuh.',295,KNOP.y-KNOP.r-18);}
+  }
+
+  function updateUI(){
+    const bs=document.getElementById('b2-scope'),br=document.getElementById('b2-rod');
+    const bi=document.getElementById('b2-info'),bt=document.getElementById('b2-infotxt');
+    bs.className=scopeCharge===0?'status-badge badge-neutral':scopeCharge>0?'status-badge badge-pos':'status-badge badge-neg';
+    bs.textContent=scopeCharge===0?`⚖️ Netral (${Math.round(leafAnim)}°)`:scopeCharge>0?`⊕ Positif (${Math.round(leafAnim)}°)`:`⊖ Negatif (${Math.round(leafAnim)}°)`;
+    br.className=!rodType?'status-badge badge-neutral':rodType==='neg'?'status-badge badge-neg':'status-badge badge-pos';
+    br.textContent=!rodType?'🔵 Batang: Tidak Ada':rodType==='neg'?'⊖ Batang Negatif Aktif':'⊕ Batang Positif Aktif';
+    let msg='';
+    if(rodNear&&scopeCharge===0) msg=`💡 Induksi: batang ${rodType==='neg'?'(−) menolak elektron ke daun, daun (−) tolak-menolak!':'(+) menarik elektron ke knop, daun kekurangan elektron, daun (−) tolak-menolak!'}`;
+    else if(scopeCharge!==0) msg=`⚡ Elektroskop bermuatan ${scopeCharge>0?'positif':'negatif'} — daun membuka karena muatan sejenis tolak-menolak!`;
+    if(msg){bt.textContent=msg;bi.classList.remove('hidden');}else bi.classList.add('hidden');
+  }
+
+  cv.addEventListener('pointerdown',e=>{e.preventDefault();const{x,y}=toC(e.clientX,e.clientY);if(rodType&&distPt(x,y,rodX,rodY)<72){dragRod=true;rdox=rodX-x;rdoy=rodY-y;cv.setPointerCapture(e.pointerId);}});
+  cv.addEventListener('pointermove',e=>{if(!dragRod)return;e.preventDefault();const{x,y}=toC(e.clientX,e.clientY);rodX=clamp(x+rdox,65,W-65);rodY=clamp(y+rdoy,28,H-28);});
+  cv.addEventListener('pointerup',()=>dragRod=false);cv.addEventListener('pointercancel',()=>dragRod=false);
+
+  function resize(){ const pw=cv.parentElement.clientWidth-16,mw=Math.min(pw,W);cv.style.width=mw+'px';cv.style.height=(mw*H/W)+'px'; }
+  resize();window.addEventListener('resize',resize);
+
+  window.sim2Reset=function(){ scopeCharge=0;rodType=null;rodX=640;rodY=155;leafAnim=0;parts=[]; };
+  window.s2ChargeRod=function(type){ rodType=type;rodX=640;rodY=155; };
+  window.s2Touch=function(){
+    if(!rodNear||!rodType) return;
+    const flow=Math.sign(-getRodQ())*2;
+    scopeCharge=clamp(scopeCharge+flow,-5,5);
+    for(let i=0;i<7;i++) parts.push({x:KNOP.x+(Math.random()-.5)*30,y:KNOP.y+(Math.random()-.5)*30,vx:(Math.random()-.5)*4,vy:(Math.random()-.5)*4-2,life:1,sign:Math.sign(-getRodQ())});
+  };
+  (function loop(){ physics();updateParts();draw();updateUI();requestAnimationFrame(loop); })();
+})();
+
+// ════════════════════════════════════════════════════════
+// SIM 3 – Petir & Penangkal Petir
+// ════════════════════════════════════════════════════════
+(function(){
+  const cv=document.getElementById('canvas3');
+  const ctx=cv.getContext('2d');
+  const W=800,H=440;
+
+  let cloudCharge=0;
+  let hasRod=true;
+  let lightning=null;
+  let struck=false;
+  let cloudParts=[];
+  let flashAlpha=0;
+  let t=0;
+
+  const GROUND_Y=398;
+  const CLOUD={x:170,y:50,w:310,h:120};
+  const BUILDING={x:540,y:192,w:90,h:248};
+  const ROD={x:583,y:152};
+
+  function buildBolt(x1,y1,x2,y2,segs){
+    const pts=[{x:x1,y:y1}];
+    for(let i=1;i<segs;i++){const t2=i/segs;pts.push({x:lerp(x1,x2,t2)+(Math.random()-.5)*44,y:lerp(y1,y2,t2)+(Math.random()-.5)*28});}
+    pts.push({x:x2,y:y2});return pts;
+  }
+
+  function tryStrike(){
+    if(cloudCharge<7||lightning) return;
+    if(Math.random()>0.02) return;
+    const tgt=hasRod?'rod':'building';
+    const tx=tgt==='rod'?ROD.x:BUILDING.x+BUILDING.w/2, ty=tgt==='rod'?ROD.y:BUILDING.y;
+    lightning={path:buildBolt(CLOUD.x+CLOUD.w/2,CLOUD.y+CLOUD.h,tx,ty,14),timer:0,target:tgt};
+    struck=tgt==='building';
+    cloudCharge=Math.max(0,cloudCharge-5);
+    flashAlpha=1;
+  }
+
+  function draw(){
+    t++;
+    ctx.clearRect(0,0,W,H);
+    const dk=cloudCharge/10;
+    const sky=ctx.createLinearGradient(0,0,0,H);
+    sky.addColorStop(0,`rgb(${Math.round(160-dk*70)},${Math.round(185-dk*90)},${Math.round(220-dk*65)})`);
+    sky.addColorStop(1,`rgb(${Math.round(200-dk*50)},${Math.round(220-dk*60)},${Math.round(245-dk*45)})`);
+    ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
+    if(flashAlpha>0){ ctx.fillStyle=`rgba(255,255,220,${flashAlpha})`; ctx.fillRect(0,0,W,H); flashAlpha=Math.max(0,flashAlpha-0.06); }
+    ctx.fillStyle=`rgb(${Math.round(74-dk*20)},${Math.round(179-dk*40)},${Math.round(120-dk*20)})`;
+    ctx.beginPath();ctx.roundRect(10,GROUND_Y,W-20,22,4);ctx.fill();
+    ctx.fillStyle='#166534';ctx.beginPath();ctx.roundRect(10,GROUND_Y+18,W-20,8,4);ctx.fill();
+    if(cloudCharge>2){ctx.font='bold 12px Nunito,sans-serif';ctx.fillStyle=`rgba(239,68,68,${dk*.75})`;ctx.textAlign='center';for(let i=0;i<9;i++) ctx.fillText('+',70+i*80,GROUND_Y-6);}
+    const bg=ctx.createLinearGradient(BUILDING.x,BUILDING.y,BUILDING.x+BUILDING.w,BUILDING.y);bg.addColorStop(0,'#CBD5E1');bg.addColorStop(1,'#94A3B8');
+    ctx.fillStyle=bg;ctx.fillRect(BUILDING.x,BUILDING.y,BUILDING.w,BUILDING.h);ctx.strokeStyle='#64748B';ctx.lineWidth=2;ctx.strokeRect(BUILDING.x,BUILDING.y,BUILDING.w,BUILDING.h);
+    ctx.beginPath();ctx.moveTo(BUILDING.x-8,BUILDING.y);ctx.lineTo(BUILDING.x+BUILDING.w/2,BUILDING.y-32);ctx.lineTo(BUILDING.x+BUILDING.w+8,BUILDING.y);ctx.closePath();ctx.fillStyle='#475569';ctx.fill();
+    for(let wr=0;wr<4;wr++) for(let wc=0;wc<2;wc++){
+      ctx.fillStyle=struck?`rgba(255,${Math.round(160+Math.random()*80)},0,${0.5+Math.random()*.4})`:'rgba(219,234,254,0.85)';
+      ctx.fillRect(BUILDING.x+10+wc*40,BUILDING.y+20+wr*55,26,30);
+    }
+    if(struck){ ctx.font='bold 24px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('🔥',BUILDING.x+BUILDING.w/2,BUILDING.y+28); }
+    if(hasRod){
+      ctx.beginPath();ctx.moveTo(ROD.x,ROD.y+32);ctx.lineTo(ROD.x,GROUND_Y);ctx.strokeStyle='#6B7280';ctx.lineWidth=4.5;ctx.stroke();
+      ctx.beginPath();ctx.moveTo(ROD.x,ROD.y);ctx.lineTo(ROD.x-7,ROD.y+22);ctx.lineTo(ROD.x+7,ROD.y+22);ctx.closePath();ctx.fillStyle='#F59E0B';ctx.fill();
+      if(cloudCharge>3){const gw=ctx.createRadialGradient(ROD.x,ROD.y,2,ROD.x,ROD.y,14+cloudCharge*1.5);gw.addColorStop(0,`rgba(253,224,71,${dk*.5})`);gw.addColorStop(1,'rgba(253,224,71,0)');ctx.beginPath();ctx.arc(ROD.x,ROD.y,14+cloudCharge*1.5,0,Math.PI*2);ctx.fillStyle=gw;ctx.fill();}
+      ctx.font='bold 11px Nunito,sans-serif';ctx.fillStyle='#374151';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText('⚡ Penangkal',ROD.x,ROD.y-10);
+    } else {
+      ctx.font='bold 12px Nunito,sans-serif';ctx.fillStyle='#DC2626';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText('⚠️ Tanpa penangkal!',BUILDING.x+BUILDING.w/2,BUILDING.y-38);
+    }
+    const cg=ctx.createRadialGradient(CLOUD.x+CLOUD.w*.4,CLOUD.y+CLOUD.h*.4,14,CLOUD.x+CLOUD.w/2,CLOUD.y+CLOUD.h/2,CLOUD.w*.6);
+    cg.addColorStop(0,`rgb(${Math.round(200-dk*90)},${Math.round(210-dk*100)},${Math.round(235-dk*80)})`);
+    cg.addColorStop(1,`rgb(${Math.round(155-dk*85)},${Math.round(165-dk*95)},${Math.round(200-dk*75)})`);
+    ctx.beginPath();
+    ctx.arc(CLOUD.x+95,CLOUD.y+85,70,0,Math.PI*2);
+    ctx.arc(CLOUD.x+170,CLOUD.y+58,85,0,Math.PI*2);
+    ctx.arc(CLOUD.x+260,CLOUD.y+80,70,0,Math.PI*2);
+    ctx.arc(CLOUD.x+CLOUD.w-25,CLOUD.y+90,52,0,Math.PI*2);
+    ctx.fillStyle=cg;ctx.fill();
+    if(cloudCharge>0){ctx.font='bold 15px Nunito,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';const cnt=Math.round(cloudCharge*2);for(let i=0;i<cnt;i++){const a=i/cnt*Math.PI*2;ctx.fillStyle=`rgba(59,130,246,${dk*.85})`;ctx.fillText('−',CLOUD.x+CLOUD.w/2+Math.cos(a)*80,CLOUD.y+CLOUD.h/2+Math.sin(a)*35);}}
+    cloudParts=cloudParts.filter(p=>p.life>0);
+    cloudParts.forEach(p=>{ctx.globalAlpha=p.life*.55;ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fillStyle='#60A5FA';ctx.fill();p.x+=p.vx;p.y+=p.vy;p.life-=0.012;});ctx.globalAlpha=1;
+    if(cloudCharge>0&&Math.random()<0.25) cloudParts.push({x:CLOUD.x+Math.random()*CLOUD.w,y:CLOUD.y+Math.random()*CLOUD.h,vx:(Math.random()-.5)*1.5,vy:(Math.random()-.5)*1.5,life:1.2+Math.random()});
+    if(lightning){
+      lightning.timer++;
+      if(lightning.timer>45){lightning=null;}
+      else{
+        const alpha=Math.max(0,1-lightning.timer/45);
+        ctx.save();ctx.globalAlpha=alpha;
+        ctx.beginPath();for(let i=0;i<lightning.path.length-1;i++){ctx.moveTo(lightning.path[i].x,lightning.path[i].y);ctx.lineTo(lightning.path[i+1].x,lightning.path[i+1].y);}
+        ctx.strokeStyle=lightning.target==='rod'?'rgba(139,92,246,0.5)':'rgba(255,220,50,0.5)';ctx.lineWidth=14;ctx.lineCap='round';ctx.stroke();
+        ctx.beginPath();for(let i=0;i<lightning.path.length-1;i++){ctx.moveTo(lightning.path[i].x,lightning.path[i].y);ctx.lineTo(lightning.path[i+1].x,lightning.path[i+1].y);}
+        ctx.strokeStyle='white';ctx.lineWidth=3;ctx.stroke();
+        if(lightning.target==='rod'&&lightning.timer<22){ctx.beginPath();ctx.moveTo(ROD.x,ROD.y+32);ctx.lineTo(ROD.x,GROUND_Y);ctx.strokeStyle=`rgba(253,224,71,${alpha*.8})`;ctx.lineWidth=7;ctx.stroke();}
+        ctx.restore();
+      }
+    }
+    ctx.font='bold 13px Nunito,sans-serif';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillStyle='#374151';
+    ctx.fillText(`☁️ Muatan Awan: ${cloudCharge}/10`,CLOUD.x+CLOUD.w/2,CLOUD.y+CLOUD.h+10);
+    if(struck){ctx.font='bold 15px Nunito,sans-serif';ctx.fillStyle='#DC2626';ctx.fillText('💥 Gedung disambar petir!',BUILDING.x+BUILDING.w/2,BUILDING.y-68);}
+    ctx.font='bold 12px Nunito,sans-serif';ctx.fillStyle='#475569';ctx.textAlign='left';ctx.textBaseline='top';
+    ctx.fillText(hasRod?'✅ Penangkal terpasang: petir aman disalurkan ke tanah.':'❌ Tanpa penangkal: petir menyambar gedung langsung!',20,H-28);
+  }
+
+  function updateUI(){
+    const bc=document.getElementById('b3-cloud'),bg=document.getElementById('b3-ground'),br=document.getElementById('b3-rod');
+    bc.className=cloudCharge===0?'status-badge badge-neutral':'status-badge badge-neg';bc.textContent=cloudCharge===0?'☁️ Awan: Netral':`☁️ Awan: − (${cloudCharge}/10)`;
+    bg.className=cloudCharge>2?'status-badge badge-pos':'status-badge badge-neutral';bg.textContent=cloudCharge>2?'🏠 Tanah: Terpolarisasi (+)':'🏠 Tanah: Netral';
+    br.className=hasRod?'status-badge badge-green':'status-badge badge-pos';br.textContent=hasRod?'⚡ Penangkal: Aktif':'⚡ Penangkal: Tidak Ada';
+  }
+
+  function resize(){ const pw=cv.parentElement.clientWidth-16,mw=Math.min(pw,W);cv.style.width=mw+'px';cv.style.height=(mw*H/W)+'px'; }
+  resize();window.addEventListener('resize',resize);
+
+  window.sim3Reset=function(){ cloudCharge=0;struck=false;lightning=null;cloudParts=[];flashAlpha=0; };
+  window.s3BuildCharge=function(){ cloudCharge=Math.min(10,cloudCharge+1);struck=false; };
+  window.s3MaxCharge=function(){ cloudCharge=10;struck=false; };
+  window.s3ToggleRod=function(){ hasRod=!hasRod; };
+  (function loop(){ tryStrike();draw();updateUI();requestAnimationFrame(loop); })();
+})();
+
+// ════════════════════════════════════════════════════════
+// SIM 4 – Hukum Coulomb
+// ════════════════════════════════════════════════════════
+(function(){
+  const cv=document.getElementById('canvas4');
+  const ctx=cv.getContext('2d');
+  const W=800,H=380;
+  const K=9e9;
+
+  let q1=3,q2=-3,r=200;
+
+  function calcF(){ return K*Math.abs(q1*1e-6)*Math.abs(q2*1e-6)/Math.pow(r/100,2); }
+  function qColor(q){ return q>0?'#EF4444':q<0?'#3B82F6':'#94A3B8'; }
+  function qLabel(q){ return q>0?`+${q} μC`:q<0?`${q} μC`:'0'; }
+
+  function drawCharge(cx,cy,q,lbl){
+    const rad=38;
+    const g=ctx.createRadialGradient(cx-12,cy-12,5,cx,cy,rad);
+    g.addColorStop(0,q>0?'#FCA5A5':q<0?'#93C5FD':'#E2E8F0');g.addColorStop(1,qColor(q));
+    ctx.beginPath();ctx.arc(cx,cy,rad,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();
+    if(q!==0){ctx.beginPath();ctx.arc(cx,cy,rad+7,0,Math.PI*2);ctx.strokeStyle=qColor(q)+'55';ctx.lineWidth=5;ctx.stroke();}
+    ctx.strokeStyle=q>0?'#B91C1C':q<0?'#1D4ED8':'#64748B';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(cx,cy,rad,0,Math.PI*2);ctx.stroke();
+    ctx.font='bold 16px Nunito,sans-serif';ctx.fillStyle='white';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(qLabel(q),cx,cy);
+    ctx.font='bold 12px Nunito,sans-serif';ctx.fillStyle='#374151';ctx.textBaseline='top';ctx.textAlign='center';ctx.fillText(lbl,cx,cy+rad+7);
+  }
+
+  function drawArrow(cx,cy,dir,col){
+    const maxL=90,minL=16,f=calcF();
+    const len=clamp(Math.log10(f+1)*18,minL,maxL);
+    const ex=cx+dir*len;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(ex,cy);ctx.strokeStyle=col;ctx.lineWidth=4.5;ctx.lineCap='round';ctx.stroke();
+    ctx.beginPath();ctx.moveTo(ex,cy);ctx.lineTo(ex-dir*14,cy-9);ctx.lineTo(ex-dir*14,cy+9);ctx.closePath();ctx.fillStyle=col;ctx.fill();
+    ctx.font='bold 10px Nunito,sans-serif';ctx.fillStyle=col;ctx.textAlign='center';ctx.textBaseline='bottom';
+    ctx.fillText(`${f.toExponential(2)} N`,lerp(cx,ex,.5),cy-14);
+  }
+
+  function drawFieldLines(x1,cy,x2){
+    if(q1===0||q2===0) return;
+    ctx.save();ctx.globalAlpha=0.22;
+    const attract=Math.sign(q1)!==Math.sign(q2);
+    if(attract){
+      const px=q1>0?x1:x2,nx=q1<0?x1:x2;
+      for(let yi=-3;yi<=3;yi++){
+        ctx.beginPath();ctx.moveTo(px,cy+yi*22);
+        const mid=lerp(px,nx,.5);ctx.bezierCurveTo(mid,cy+yi*22-Math.abs(yi)*8,mid,cy+yi*22-Math.abs(yi)*8,nx,cy+yi*18);
+        ctx.strokeStyle='#6366F1';ctx.lineWidth=1.5;ctx.stroke();
+      }
+    } else {
+      const c1=q1>0?'#EF4444':'#3B82F6',c2=q2>0?'#EF4444':'#3B82F6';
+      for(let yi=-3;yi<=3;yi++){
+        ctx.beginPath();ctx.moveTo(x1,cy+yi*22);ctx.lineTo(x1-55,cy+yi*28);ctx.strokeStyle=c1;ctx.lineWidth=1.5;ctx.stroke();
+        ctx.beginPath();ctx.moveTo(x2,cy+yi*22);ctx.lineTo(x2+55,cy+yi*28);ctx.strokeStyle=c2;ctx.lineWidth=1.5;ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const bg=ctx.createLinearGradient(0,0,W,H);bg.addColorStop(0,'#F8FAFF');bg.addColorStop(1,'#EEF2FF');ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+    const cy=H/2-10;
+    const x1=W/2-r/2, x2=W/2+r/2;
+    drawFieldLines(x1,cy,x2);
+    ctx.beginPath();ctx.moveTo(x1,cy+58);ctx.lineTo(x2,cy+58);ctx.strokeStyle='#94A3B8';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);ctx.stroke();ctx.setLineDash([]);
+    [-1,1].forEach(s=>{ctx.beginPath();ctx.moveTo(W/2+s*r/2,cy+52);ctx.lineTo(W/2+s*r/2,cy+65);ctx.strokeStyle='#94A3B8';ctx.lineWidth=1.5;ctx.stroke();});
+    ctx.font='bold 12px Nunito,sans-serif';ctx.fillStyle='#64748B';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText(`r = ${Math.round(r)} px`,W/2,cy+68);
+    drawCharge(x1,cy,q1,'q₁');
+    drawCharge(x2,cy,q2,'q₂');
+    if(q1!==0&&q2!==0){
+      const attract=Math.sign(q1)!==Math.sign(q2);
+      const col=attract?'#6366F1':'#EF4444';
+      drawArrow(x1-38,cy,attract?1:-1,col);
+      drawArrow(x2+38,cy,attract?-1:1,col);
+      ctx.font='bold 13px Nunito,sans-serif';ctx.fillStyle=col;ctx.textAlign='center';ctx.textBaseline='top';
+      ctx.fillText(attract?'← Gaya Tarik-Menarik (beda jenis) →':'← Gaya Tolak-Menolak (sejenis) →',W/2,cy-70);
+    }
+    ctx.fillStyle='rgba(255,255,255,0.75)';ctx.beginPath();ctx.roundRect(14,14,220,56,8);ctx.fill();ctx.strokeStyle='rgba(99,102,241,0.2)';ctx.lineWidth=1.5;ctx.stroke();
+    ctx.font='bold 15px Nunito,sans-serif';ctx.fillStyle='#374151';ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText('F = k · |q₁| · |q₂| / r²',22,22);
+    ctx.font='11px Nunito,sans-serif';ctx.fillStyle='#6B7280';ctx.fillText('k = 9×10⁹ N·m²/C²',22,44);
+  }
+
+  function updateUI(){
+    const f=calcF();
+    const bf=document.getElementById('b4-force'),bt=document.getElementById('b4-type');
+    bf.textContent=q1===0||q2===0?'⚡ Gaya: 0 N':`⚡ Gaya: ${f.toExponential(2)} N`;
+    if(q1===0||q2===0){bt.className='status-badge badge-neutral';bt.textContent='↔ Jenis: –';}
+    else if(Math.sign(q1)!==Math.sign(q2)){bt.className='status-badge badge-neg';bt.textContent='🤝 Tarik-Menarik';}
+    else{bt.className='status-badge badge-pos';bt.textContent='💢 Tolak-Menolak';}
+  }
+
+  function resize(){ const pw=cv.parentElement.clientWidth-16,mw=Math.min(pw,W);cv.style.width=mw+'px';cv.style.height=(mw*H/W)+'px'; }
+  resize();window.addEventListener('resize',resize);
+
+  window.s4Update=function(){
+    q1=parseInt(document.getElementById('sl-q1').value);
+    q2=parseInt(document.getElementById('sl-q2').value);
+    r=parseInt(document.getElementById('sl-r').value);
+    document.getElementById('lbl-q1').textContent=q1===0?'0':q1>0?`+${q1} μC`:`${q1} μC`;
+    document.getElementById('lbl-q2').textContent=q2===0?'0':q2>0?`+${q2} μC`:`${q2} μC`;
+    document.getElementById('lbl-r').textContent=`${r} px`;
+  };
+  (function loop(){ draw();updateUI();requestAnimationFrame(loop); })();
+})();
+</script>
+</body>
+</html>
