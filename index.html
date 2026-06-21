@@ -202,6 +202,50 @@
     font-size: 0.78rem; color: #3730A3; font-weight: 600;
     margin-top: 0.4rem;
   }
+
+  /* ── Identitas Siswa ── */
+  .identitas-wrap input {
+    background: rgba(255,255,255,0.7);
+    border: 2px solid #C7D2FE;
+    border-radius: 0.6rem;
+    padding: 0.4rem 0.7rem;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #3730A3;
+    outline: none;
+    width: 100%;
+  }
+  .identitas-wrap input:focus { border-color: #6366F1; }
+  .identitas-wrap label { font-size: 0.7rem; font-weight: 800; color: #6366F1; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.2rem; display: block; }
+
+  /* ── Panel Unduh Laporan ── */
+  .laporan-panel {
+    background: linear-gradient(135deg, #ECFDF5, #D1FAE5);
+    border: 2px solid #6EE7B7;
+  }
+  .progress-track { background: #D1FAE5; border-radius: 9999px; height: 10px; overflow: hidden; width: 100%; }
+  .progress-fill { background: linear-gradient(90deg, #10B981, #059669); height: 100%; border-radius: 9999px; transition: width 0.3s; }
+  .btn-download {
+    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    font-weight: 800; font-size: 0.88rem; font-family: 'Nunito', sans-serif;
+    padding: 0.75rem 1.1rem; border-radius: 0.85rem; border: none; cursor: pointer;
+    color: white; transition: transform 0.1s, box-shadow 0.1s; flex: 1; min-width: 160px;
+  }
+  .btn-download:hover { transform: translateY(-2px); }
+  .btn-word { background: linear-gradient(135deg, #2563EB, #1D4ED8); box-shadow: 0 4px 12px rgba(37,99,235,0.35); }
+  .btn-pdf  { background: linear-gradient(135deg, #DC2626, #B91C1C); box-shadow: 0 4px 12px rgba(220,38,38,0.35); }
+
+  /* ── Area cetak (disembunyikan di layar, hanya tampil saat print) ── */
+  #printReportArea { display: none; }
+  @media print {
+    body.printing-report > *:not(#printReportArea) { display: none !important; }
+    body.printing-report #printReportArea {
+      display: block !important;
+      font-family: 'Calibri', Arial, sans-serif;
+      color: #111;
+    }
+  }
 </style>
 </head>
 <body>
@@ -212,6 +256,18 @@
     <p class="text-xs font-700 uppercase tracking-widest text-indigo-400 mb-1">IPA Kelas 9 – Listrik Statis · SMPN 3 Besuki</p>
     <h1 class="text-2xl sm:text-3xl font-800 text-gray-800 leading-tight">⚡ Lab Virtual Listrik Statis</h1>
     <p class="text-sm text-gray-500 mt-1">Eksplorasi, amati, analisis — temukan sendiri hukumnya!</p>
+  </div>
+
+  <!-- Identitas Siswa -->
+  <div class="card p-3 mb-3 grid grid-cols-2 gap-3 identitas-wrap">
+    <div>
+      <label for="namaSiswa">Nama Siswa</label>
+      <input type="text" id="namaSiswa" placeholder="Tulis namamu...">
+    </div>
+    <div>
+      <label for="kelasSiswa">Kelas</label>
+      <input type="text" id="kelasSiswa" placeholder="Contoh: IX-A">
+    </div>
   </div>
 
   <!-- Tab Navigation -->
@@ -819,8 +875,25 @@
     </div>
   </div>
 
+  <!-- ════════════════ PANEL UNDUH LAPORAN INKUIRI ════════════════ -->
+  <div class="card laporan-panel p-4 mb-3">
+    <h3 class="font-800 text-emerald-800 text-base mb-1">📥 Unduh Hasil Pekerjaan Inkuirimu</h3>
+    <p class="text-xs text-emerald-700 font-600 mb-3">Setelah selesai mengerjakan pertanyaan-pertanyaan inkuiri di keempat aktivitas, unduh seluruh jawabanmu sebagai laporan Word atau PDF untuk dikumpulkan ke gurumu.</p>
+    <div class="flex items-center gap-3 mb-3">
+      <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      <span id="progressText" class="text-xs font-800 text-emerald-800 whitespace-nowrap">0 / 0 terisi</span>
+    </div>
+    <div class="flex flex-wrap gap-3">
+      <button class="btn-download btn-word" onclick="downloadWord()">📄 Unduh sebagai Word (.doc)</button>
+      <button class="btn-download btn-pdf" onclick="printReportPDF()">🖨️ Unduh sebagai PDF</button>
+    </div>
+    <p class="text-xs text-emerald-700 font-600 mt-2">💡 Untuk PDF: pilih tujuan "Save as PDF" / "Simpan sebagai PDF" pada kotak dialog cetak yang muncul.</p>
+  </div>
+
   <p class="text-center text-xs text-gray-400 mt-3">Dibuat untuk SMPN 3 Besuki · Media Pembelajaran Interaktif Berbasis Inkuiri · IPA Kelas 9</p>
 </div>
+
+<div id="printReportArea"></div>
 
 <script>
 // ─── Tab switching ──────────────────────────────────────────────────────
@@ -1343,6 +1416,231 @@ var s1ShowCharges = true;
   };
   (function loop(){ draw();updateUI();requestAnimationFrame(loop); })();
 })();
+
+// ════════════════════════════════════════════════════════
+// LAPORAN HASIL INKUIRI — kumpulkan jawaban & unduh Word/PDF
+// ════════════════════════════════════════════════════════
+function escapeHtml(s){
+  return (s===undefined||s===null?'':String(s))
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Hitung progres pengisian (textarea, input isian, dan kelompok pilihan ganda)
+function getProgress(){
+  let total = 0, filled = 0;
+  document.querySelectorAll('.inkuiri-panel textarea.jawaban-input').forEach(t=>{
+    total++; if (t.value.trim()) filled++;
+  });
+  document.querySelectorAll('.inkuiri-panel input').forEach(inp=>{
+    if (inp.type === 'radio') return;
+    total++; if (inp.value.trim()) filled++;
+  });
+  const radioGroups = new Set();
+  document.querySelectorAll('.inkuiri-panel input[type="radio"]').forEach(r=>radioGroups.add(r.name));
+  radioGroups.forEach(name=>{
+    total++;
+    if (document.querySelector(`input[name="${name}"]:checked`)) filled++;
+  });
+  return {total, filled};
+}
+
+function updateProgress(){
+  const {total, filled} = getProgress();
+  const pct = total ? Math.round((filled/total)*100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = `${filled} / ${total} terisi (${pct}%)`;
+}
+document.addEventListener('input', updateProgress);
+document.addEventListener('change', updateProgress);
+document.addEventListener('DOMContentLoaded', updateProgress);
+updateProgress();
+
+// Ambil teks pertanyaan tanpa nomor
+function getQuestionText(item){
+  const clone = item.cloneNode(true);
+  const nomorEl = clone.querySelector('.nomor');
+  if (nomorEl) nomorEl.remove();
+  return clone.textContent.trim().replace(/\s+/g,' ');
+}
+function getNomor(item){
+  const n = item.querySelector('.nomor');
+  return n ? n.textContent.trim() : '';
+}
+
+// Rekonstruksi kalimat berisi input inline (mis. bagian Simpulan) dengan nilai jawaban disisipkan
+function fillTextWithInputs(container){
+  let out = '';
+  container.childNodes.forEach(node=>{
+    if (node.nodeType === 3) {
+      out += node.textContent;
+    } else if (node.nodeType === 1) {
+      if (node.tagName === 'INPUT') {
+        const v = node.value.trim();
+        out += v ? `【${v}】` : '【...........】';
+      } else {
+        out += fillTextWithInputs(node);
+      }
+    }
+  });
+  return out.replace(/\s+/g,' ').trim();
+}
+
+// Ekstrak tabel data (mendukung rowspan)
+function extractTable(table){
+  const headers = Array.from(table.querySelectorAll('thead th')).map(th=>th.textContent.trim());
+  const colCount = headers.length;
+  const pending = {};
+  const rows = Array.from(table.querySelectorAll('tbody tr')).map(tr=>{
+    const tds = Array.from(tr.children);
+    let tdIdx = 0;
+    const cells = [];
+    for (let col=0; col<colCount; col++){
+      if (pending[col] && pending[col].remaining > 0){
+        cells.push(pending[col].value);
+        pending[col].remaining--;
+        continue;
+      }
+      const td = tds[tdIdx++];
+      if (!td){ cells.push(''); continue; }
+      const inp = td.querySelector('input');
+      const val = inp ? (inp.value.trim() || '-') : td.textContent.trim();
+      const span = parseInt(td.getAttribute('rowspan') || '1', 10);
+      if (span > 1) pending[col] = {value: val, remaining: span - 1};
+      cells.push(val);
+    }
+    return cells;
+  });
+  return {headers, rows};
+}
+
+// Kumpulkan seluruh data jawaban dari 4 aktivitas inkuiri
+function collectReport(){
+  const simPanels = Array.from(document.querySelectorAll('.sim-panel'));
+  const report = [];
+  simPanels.forEach(panel=>{
+    const inkuiriPanel = panel.querySelector('.inkuiri-panel');
+    if (!inkuiriPanel) return;
+    const activityTitle = inkuiriPanel.querySelector('.inkuiri-header h3').textContent.trim();
+    const sections = [];
+    inkuiriPanel.querySelectorAll('.inkuiri-section').forEach(sec=>{
+      const faseLabel = sec.querySelector('.badge-fase')?.textContent.trim() || '';
+      const heading = sec.querySelector('h4')?.textContent.trim() || '';
+      const items = [];
+      const children = Array.from(sec.children);
+      const consumed = new Set();
+      let firstH4Seen = false;
+      for (let i=0; i<children.length; i++){
+        const el = children[i];
+        if (consumed.has(el)) continue;
+        if (el.tagName === 'H4'){
+          if (!firstH4Seen) { firstH4Seen = true; continue; } // sudah dipakai sebagai judul fase
+          items.push({type:'subheading', text: el.textContent.trim()});
+        } else if (el.classList.contains('pertanyaan-item')){
+          const qText = getQuestionText(el);
+          const nomor = getNomor(el);
+          let answer = '';
+          const next = children[i+1];
+          if (next && next.tagName === 'TEXTAREA'){
+            answer = next.value.trim() || '(belum dijawab)';
+            consumed.add(next);
+          } else if (next && next.tagName === 'DIV' && next.querySelector('input[type="radio"]')){
+            const checked = next.querySelector('input[type="radio"]:checked');
+            if (checked){
+              const label = checked.closest('label');
+              answer = label ? label.textContent.trim() : checked.value;
+            } else {
+              answer = '(belum dipilih)';
+            }
+            consumed.add(next);
+          }
+          items.push({type:'qa', nomor, question:qText, answer});
+        } else if (el.tagName === 'TEXTAREA' && el.classList.contains('jawaban-input')){
+          // Textarea berdiri sendiri (tanpa .pertanyaan-item di depannya), mis. sebagian Simpulan
+          items.push({type:'qa', nomor:'', question: heading || 'Jawaban', answer: el.value.trim() || '(belum dijawab)'});
+        } else if (el.tagName === 'TABLE' && el.classList.contains('tabel-data')){
+          const {headers, rows} = extractTable(el);
+          items.push({type:'table', headers, rows});
+        } else if (el.tagName === 'P' && el.querySelector('input')){
+          items.push({type:'text', text: fillTextWithInputs(el)});
+        } else if (el.tagName === 'DIV' && el.style.display === 'grid' && el.querySelector('input') && !el.querySelector('input[type="radio"]')){
+          const lines = Array.from(el.children).map(c=>fillTextWithInputs(c));
+          items.push({type:'textlist', lines});
+        }
+      }
+      if (items.length) sections.push({faseLabel, heading, items});
+    });
+    if (sections.length) report.push({activityTitle, sections});
+  });
+  return report;
+}
+
+// Susun laporan menjadi HTML siap unduh/cetak
+function buildReportHTML(){
+  const nama = document.getElementById('namaSiswa').value.trim() || '..........................';
+  const kelas = document.getElementById('kelasSiswa').value.trim() || '.................';
+  const tanggal = new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
+  const data = collectReport();
+  let html = '';
+  html += `<h1 style="text-align:center;font-size:18pt;margin-bottom:4px;">LAPORAN HASIL INKUIRI</h1>`;
+  html += `<h2 style="text-align:center;font-size:13pt;font-weight:normal;margin-top:0;color:#444;">Lab Virtual Listrik Statis &ndash; IPA Kelas 9 &middot; SMPN 3 Besuki</h2>`;
+  html += `<table style="width:100%;margin:14px 0;font-size:11pt;border:none;"><tr><td style="width:50%;padding:2px 0;"><strong>Nama Siswa</strong> : ${escapeHtml(nama)}</td><td style="padding:2px 0;"><strong>Kelas</strong> : ${escapeHtml(kelas)}</td></tr><tr><td colspan="2" style="padding:2px 0;"><strong>Tanggal</strong> : ${tanggal}</td></tr></table>`;
+  data.forEach(sim=>{
+    html += `<h2 style="background:#EEF2FF;color:#3730A3;padding:6px 10px;border-radius:4px;font-size:13pt;margin-top:24px;page-break-before:auto;">${escapeHtml(sim.activityTitle)}</h2>`;
+    sim.sections.forEach(sec=>{
+      html += `<h3 style="font-size:11.5pt;color:#1F2937;margin-top:14px;margin-bottom:2px;">${escapeHtml(sec.faseLabel)} &mdash; ${escapeHtml(sec.heading)}</h3>`;
+      sec.items.forEach(item=>{
+        if (item.type === 'subheading'){
+          html += `<p style="font-weight:800;font-size:10.5pt;color:#374151;margin:10px 0 2px 0;">${escapeHtml(item.text)}</p>`;
+        } else if (item.type === 'qa'){
+          html += `<p style="margin:6px 0 2px 0;font-size:10.5pt;"><strong>${escapeHtml(item.nomor)}. ${escapeHtml(item.question)}</strong></p>`;
+          html += `<p style="margin:0 0 6px 14px;font-size:10.5pt;color:#1D4ED8;background:#F8FAFC;padding:4px 8px;border-left:3px solid #C7D2FE;">${escapeHtml(item.answer)}</p>`;
+        } else if (item.type === 'table'){
+          html += `<table style="border-collapse:collapse;width:100%;margin:8px 0;font-size:9.5pt;">`;
+          html += `<tr>${item.headers.map(h=>`<th style="border:1px solid #999;padding:4px 6px;background:#F1F5F9;">${escapeHtml(h)}</th>`).join('')}</tr>`;
+          item.rows.forEach(row=>{
+            html += `<tr>${row.map(c=>`<td style="border:1px solid #999;padding:4px 6px;">${escapeHtml(c)}</td>`).join('')}</tr>`;
+          });
+          html += `</table>`;
+        } else if (item.type === 'text'){
+          html += `<p style="margin:4px 0;font-size:10.5pt;background:#F0FDF4;padding:4px 8px;border-left:3px solid #86EFAC;">${escapeHtml(item.text)}</p>`;
+        } else if (item.type === 'textlist'){
+          item.lines.forEach(line=>{
+            html += `<p style="margin:4px 0;font-size:10.5pt;background:#F0FDF4;padding:4px 8px;border-left:3px solid #86EFAC;">${escapeHtml(line)}</p>`;
+          });
+        }
+      });
+    });
+  });
+  return html;
+}
+
+// Unduh sebagai dokumen Word (.doc)
+function downloadWord(){
+  const contentHtml = buildReportHTML();
+  const fullHtml = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">'
+    + '<head><meta charset="utf-8"><title>Laporan Inkuiri</title>'
+    + '<style>body{font-family:Calibri,Arial,sans-serif;} table{border-collapse:collapse;}</style>'
+    + '</head><body>' + contentHtml + '</body></html>';
+  const blob = new Blob(['\ufeff', fullHtml], {type:'application/msword'});
+  const namaFile = (document.getElementById('namaSiswa').value.trim() || 'Siswa').replace(/[^a-zA-Z0-9]+/g,'_');
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `Laporan_Inkuiri_ListrikStatis_${namaFile}.doc`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(link.href);
+}
+
+// Unduh/cetak sebagai PDF lewat dialog cetak browser
+function printReportPDF(){
+  document.getElementById('printReportArea').innerHTML = buildReportHTML();
+  document.body.classList.add('printing-report');
+  window.print();
+}
+window.addEventListener('afterprint', ()=>{
+  document.body.classList.remove('printing-report');
+});
 </script>
 </body>
 </html>
